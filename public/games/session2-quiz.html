@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Concepts & Ethics Quiz</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: #131c2e;
+            --text-main: #ffffff;
+            --text-muted: #8fa0dd;
+            --primary-neon: #00e5ff;
+            --secondary-neon: #bd00ff;
+            --success-neon: #39ff14;
+            --border-color: #223152;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .quiz-container {
+            background-color: var(--card-bg);
+            padding: 40px 30px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px rgba(0, 229, 255, 0.05);
+            width: 100%;
+            max-width: 680px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            color: var(--primary-neon);
+            margin-top: 0;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+
+        .progress-bar {
+            font-size: 0.9rem;
+            color: var(--primary-neon);
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .question-text {
+            font-size: 1.3rem;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 30px;
+            color: var(--text-main);
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-bottom: 30px;
+        }
+
+        .option-btn {
+            padding: 16px 20px;
+            border: 1px solid var(--border-color);
+            background-color: rgba(34, 49, 82, 0.3);
+            color: var(--text-main);
+            border-radius: 10px;
+            font-size: 1.05rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .option-btn:hover {
+            border-color: var(--primary-neon);
+            background-color: rgba(0, 229, 255, 0.08);
+            transform: translateX(4px);
+        }
+
+        .option-btn.selected {
+            background-color: rgba(189, 0, 255, 0.15);
+            border-color: var(--secondary-neon);
+            box-shadow: 0 0 12px rgba(189, 0, 255, 0.2);
+        }
+
+        .next-btn, .restart-btn {
+            padding: 14px 35px;
+            background: linear-gradient(45deg, var(--primary-neon), var(--secondary-neon));
+            color: #000;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: none;
+            margin: 0 auto;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: opacity 0.2s;
+        }
+
+        .next-btn:hover, .restart-btn:hover {
+            opacity: 0.9;
+        }
+
+        .result-container {
+            display: none;
+        }
+
+        .score-text {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--success-neon);
+            margin-bottom: 15px;
+        }
+
+        .message-text {
+            font-size: 1.15rem;
+            color: var(--text-muted);
+            margin-bottom: 30px;
+            line-height: 1.6;
+            padding: 0 10px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+        }
+        .badge-red { background-color: rgba(255,0,0,0.2); color: #ff4d4d; border: 1px solid #ff0000; }
+        .badge-yellow { background-color: rgba(255,200,0,0.2); color: #ffcc00; border: 1px solid #ffc800; }
+        .badge-green { background-color: rgba(57,255,20,0.2); color: var(--success-neon); border: 1px solid var(--success-neon); }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <div id="quiz">
+        <h1>AI Concepts & Ethics Challenge</h1>
+        <div class="subtitle">Test Your Digital Intelligence</div>
+        <div class="progress-bar" id="progress">Loading assessment...</div>
+        <div class="question-text" id="question">Question Text</div>
+        <div class="options-container" id="options">
+            </div>
+        <button class="next-btn" id="next-btn" onclick="nextQuestion()">Next Question</button>
+    </div>
+
+    <div class="result-container" id="result">
+        <h1>Quiz Complete!</h1>
+        <div class="subtitle">Your Performance Summary</div>
+        <div id="ethics-badge" class="badge">Performance tier</div>
+        <div class="score-text" id="score">0 / 10</div>
+        <div class="message-text" id="message">Feedback loading...</div>
+        <button class="restart-btn" id="restart-btn" style="display: block;" onclick="restartQuiz()">Play Again</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        {
+            question: "What is the main difference between Google (Search) and ChatGPT (AI)?",
+            options: [
+                "Google writes new stories, and ChatGPT only finds web links.",
+                "Google acts like a 'Librarian' finding books, while ChatGPT acts like a 'Creator' making new things.",
+                "They are exactly the same tool.",
+                "Google only works on phones, and ChatGPT only works on computers."
+            ],
+            answer: 1
+        },
+        {
+            question: "Which type of AI acts like a 'Detective' to sort things out and make choices?",
+            options: [
+                "Generative AI",
+                "Discriminative AI",
+                "Artificial Super Intelligence",
+                "Robot AI"
+            ],
+            answer: 1
+        },
+        {
+            question: "What does 'Prompt Engineering' actually mean?",
+            options: [
+                "Writing really hard computer code.",
+                "Building robots with metal and wires.",
+                "The art of talking and communicating clearly with an AI.",
+                "Fixing a broken computer screen."
+            ],
+            answer: 2
+        },
+        {
+            question: "What do we ask the AI to do when we use 'Step-by-Step' (Chain-of-Thought) thinking?",
+            options: [
+                "Guess the answer as fast as possible.",
+                "Explain its thinking one step at a time.",
+                "Draw a picture of a chain.",
+                "Speak in a different language."
+            ],
+            answer: 1
+        },
+        {
+            question: "If you give the AI 2 or 3 examples before asking your real question, what is this called?",
+            options: [
+                "Zero-Shot Prompt",
+                "One-Shot Prompt",
+                "Few-Shot Prompt",
+                "Many-Shot Prompt"
+            ],
+            answer: 2
+        },
+        {
+            question: "In the C.L.E.A.R. rules, what does asking for a specific 'Format' mean?",
+            options: [
+                "Telling the AI what colors to use on the screen.",
+                "Telling the AI how the answer should look (like a list or a table).",
+                "Telling the AI to talk louder.",
+                "Telling the AI to search the internet for a picture."
+            ],
+            answer: 1
+        },
+        {
+            question: "In the R.C.F. rule, what does giving the AI a 'Role' do?",
+            options: [
+                "It tells the AI to act like a specific person, like a 'Teacher' or a 'Guide'.",
+                "It makes the AI change its name.",
+                "It makes the computer run much faster.",
+                "It turns off the AI."
+            ],
+            answer: 0
+        },
+        {
+            question: "What is 'Artificial Super Intelligence' (ASI)?",
+            options: [
+                "A smart calculator used in math class.",
+                "An AI that only knows how to play chess.",
+                "A future AI that is much smarter than all humans combined.",
+                "An AI that helps you drive a car."
+            ],
+            answer: 2
+        },
+        {
+            question: "In the 'Traffic Signal of Ethics', which action is a RED (STOP) signal?",
+            options: [
+                "Asking AI for fun science project ideas.",
+                "Using AI to check your spelling on an essay.",
+                "Making fake videos (deepfakes) or being mean to others online.",
+                "Using AI to learn a brand new math skill."
+            ],
+            answer: 2
+        },
+        {
+            question: "In the 'Traffic Signal of Ethics', which action is a YELLOW (CAUTION) signal?",
+            options: [
+                "Copy-pasting AI answers for your homework without learning it.",
+                "Using AI to quiz you for a big test.",
+                "Asking AI to explain how rain works in simple words.",
+                "Using AI to learn how to draw cartoons."
+            ],
+            answer: 0
+        }
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let selectedOptionIndex = null;
+
+    const quizDiv = document.getElementById('quiz');
+    const resultDiv = document.getElementById('result');
+    const questionEl = document.getElementById('question');
+    const optionsEl = document.getElementById('options');
+    const nextBtn = document.getElementById('next-btn');
+    const progressEl = document.getElementById('progress');
+    const scoreEl = document.getElementById('score');
+    const messageEl = document.getElementById('message');
+    const badgeEl = document.getElementById('ethics-badge');
+
+    function loadQuestion() {
+        selectedOptionIndex = null;
+        nextBtn.style.display = 'none';
+        
+        const currentQuestion = questions[currentQuestionIndex];
+        questionEl.textContent = currentQuestion.question;
+        progressEl.textContent = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
+        
+        optionsEl.innerHTML = '';
+        currentQuestion.options.forEach((option, index) => {
+            const button = document.createElement('button');
+            button.textContent = option;
+            button.classList.add('option-btn');
+            button.onclick = () => selectOption(index, button);
+            optionsEl.appendChild(button);
+        });
+    }
+
+    function selectOption(index, button) {
+        selectedOptionIndex = index;
+        
+        const allButtons = optionsEl.querySelectorAll('.option-btn');
+        allButtons.forEach(btn => btn.classList.remove('selected'));
+        
+        button.classList.add('selected');
+        nextBtn.style.display = 'block';
+        
+        if (currentQuestionIndex === questions.length - 1) {
+            nextBtn.textContent = 'See Final Results';
+        } else {
+            nextBtn.textContent = 'Next Question';
+        }
+    }
+
+    function nextQuestion() {
+        if (selectedOptionIndex === questions[currentQuestionIndex].answer) {
+            score++;
+        }
+        
+        currentQuestionIndex++;
+        
+        if (currentQuestionIndex < questions.length) {
+            loadQuestion();
+        } else {
+            showResults();
+        }
+    }
+
+    function showResults() {
+        quizDiv.style.display = 'none';
+        resultDiv.style.display = 'block';
+        
+        scoreEl.textContent = `${score} / ${questions.length} Correct Answers!`;
+        
+        if (score <= 4) {
+            badgeEl.textContent = "Keep Trying!";
+            badgeEl.className = "badge badge-red";
+            messageEl.textContent = "Oops! Keep practicing! Remember, AI needs clear instructions to work well. Review the rules and try again!";
+        } else if (score <= 7) {
+            badgeEl.textContent = "Good Job!";
+            badgeEl.className = "badge badge-yellow";
+            messageEl.textContent = "Great work! You are getting the hang of it. Keep practicing how to talk to AI and you'll be an expert soon!";
+        } else {
+            badgeEl.textContent = "AI Expert!";
+            badgeEl.className = "badge badge-green";
+            messageEl.textContent = "Awesome job! You are a true AI expert! You know exactly how to use AI safely and smartly. Keep up the amazing work!";
+        }
+    }
+
+    function restartQuiz() {
+        currentQuestionIndex = 0;
+        score = 0;
+        quizDiv.style.display = 'block';
+        resultDiv.style.display = 'none';
+        loadQuestion();
+    }
+
+    loadQuestion();
+</script>
+<script>
+(function(){
+  var lastH=0;
+  function sendHeight(){
+    try{
+      var d=document, b=d.body, e=d.documentElement;
+      var h=Math.max(
+        b?b.scrollHeight:0, b?b.offsetHeight:0,
+        e?e.scrollHeight:0, e?e.offsetHeight:0, e?e.clientHeight:0
+      );
+      if(h && Math.abs(h-lastH)>1){
+        lastH=h;
+        parent.postMessage({gcGameHeight:h}, '*');
+      }
+    }catch(err){}
+  }
+  window.addEventListener('load', sendHeight);
+  window.addEventListener('resize', sendHeight);
+  document.addEventListener('DOMContentLoaded', sendHeight);
+  if(window.ResizeObserver){
+    try{ new ResizeObserver(sendHeight).observe(document.documentElement); }catch(err){}
+  }
+  if(window.MutationObserver){
+    try{
+      new MutationObserver(sendHeight).observe(document.documentElement, {childList:true, subtree:true, attributes:true});
+    }catch(err){}
+  }
+  for(var i=1;i<=20;i++){ setTimeout(sendHeight, i*150); }
+  setInterval(sendHeight, 600);
+})();
+</script>
+</body>
+</html>

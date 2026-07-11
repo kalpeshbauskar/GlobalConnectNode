@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI4ALL Student Quiz</title>
+    <style>
+        body {font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#e0f7fa;color:#333;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;}
+        .quiz-container{background:#fff;padding:30px;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,.1);width:90%;max-width:650px;text-align:center;}
+        h1{color:#00796b;margin-bottom:20px}.question-text{font-size:1.3rem;font-weight:bold;margin-bottom:20px;color:#263238}
+        .options-container{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
+        .option-btn{padding:15px;border:2px solid #00acc1;background:transparent;color:#00838f;border-radius:8px;font-size:1.05rem;font-weight:600;cursor:pointer;transition:.2s}
+        .option-btn:hover{background:#00acc1;color:#fff}.option-btn.selected{background:#00838f;color:#fff;border-color:#00838f}
+        .next-btn,.restart-btn{padding:12px 25px;background:#43a047;color:#fff;border:none;border-radius:8px;font-size:1.1rem;font-weight:bold;cursor:pointer;display:none;margin:0 auto}
+        .next-btn:hover,.restart-btn:hover{background:#2e7d32}.result-container{display:none}
+        .score-text{font-size:1.8rem;font-weight:bold;color:#00796b;margin-bottom:15px}.message-text{font-size:1.2rem;color:#455a64;margin-bottom:25px;line-height:1.6}
+        .progress{font-size:1rem;color:#78909c;margin-bottom:15px;font-weight:bold}
+    </style>
+</head>
+<body>
+<div class="quiz-container">
+<div id="quiz">
+<h1>Introduction to AI</h1>
+<div class="progress" id="progress"></div>
+<div class="question-text" id="question"></div>
+<div class="options-container" id="options"></div>
+<button class="next-btn" id="next-btn" onclick="nextQuestion()">Next</button>
+</div>
+<div class="result-container" id="result">
+<h1>Quiz Complete!</h1>
+<div class="score-text" id="score"></div>
+<div class="message-text" id="message"></div>
+<button class="restart-btn" id="restart-btn" style="display:block" onclick="restartQuiz()">Play Again</button>
+</div>
+</div>
+<script>
+const questions=[
+{question:"What is Artificial Intelligence (AI)?",options:["A machine that only follows strict rules","The ability of a machine to think, learn, and make decisions like a human","A traditional traffic light","A basic washing machine"],answer:1},
+{question:"What are the three steps of an AI system?",options:["Read ➔ Write ➔ Speak","Start ➔ Pause ➔ Stop","Input ➔ AI System ➔ Output","Monitor ➔ Keyboard ➔ Mouse"],answer:2},
+{question:"How does an AI recognize an object like an Apple?",options:["By tasting it","By guessing randomly","By recognizing patterns like color, shape, and size","By asking a human to type the name"],answer:2},
+{question:"A Neural Network (NN) is designed to work like what biological system?",options:["A car engine","The human brain","A basic elevator","An alarm clock"],answer:1},
+{question:"What allows computers to learn from data and improve without being directly programmed?",options:["The Binary System","Machine Learning (ML)","A Calculator","A Remote-Control Car"],answer:1},
+{question:"The Binary System is a number system that uses which two digits?",options:["1 and 2","A and B","0 and 9","0 and 1"],answer:3},
+{question:"In the 'Binary Artist' activity, what does the number '1' represent?",options:["White (Empty)","Red","Black (Filled)","Blue"],answer:2},
+{question:"Which of the following is an example of an AI system?",options:["Basic Calculator","Traditional Traffic Light","Face Unlock","Alarm Clock"],answer:2},
+{question:"Which of the following is NOT an AI?",options:["ChatGPT","Siri","Google Maps","Basic Elevator"],answer:3},
+{question:"What is the ultimate goal when learning about technology?",options:["Don't be a consumer, be an INNOVATOR","Always use a calculator","Let the AI do all the work","Stop using smartphones"],answer:0}
+];
+let currentQuestionIndex=0,score=0,selectedOptionIndex=null;
+const quizDiv=document.getElementById('quiz'),resultDiv=document.getElementById('result'),questionEl=document.getElementById('question'),optionsEl=document.getElementById('options'),nextBtn=document.getElementById('next-btn'),progressEl=document.getElementById('progress'),scoreEl=document.getElementById('score'),messageEl=document.getElementById('message');
+function loadQuestion(){selectedOptionIndex=null;nextBtn.style.display='none';const q=questions[currentQuestionIndex];questionEl.textContent=q.question;progressEl.textContent=`Question ${currentQuestionIndex+1} of ${questions.length}`;optionsEl.innerHTML='';q.options.forEach((o,i)=>{const b=document.createElement('button');b.textContent=o;b.className='option-btn';b.onclick=()=>selectOption(i,b);optionsEl.appendChild(b);});}
+function selectOption(i,b){selectedOptionIndex=i;document.querySelectorAll('.option-btn').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');nextBtn.style.display='block';}
+function nextQuestion(){if(selectedOptionIndex===questions[currentQuestionIndex].answer)score++;currentQuestionIndex++;currentQuestionIndex<questions.length?loadQuestion():showResults();}
+function showResults(){quizDiv.style.display='none';resultDiv.style.display='block';scoreEl.textContent=`You scored: ${score} / ${questions.length}`;messageEl.textContent=score<=4?"Great effort! Keep learning!":score<=7?"Good job! You're understanding AI well.":"Outstanding work! You're becoming an innovator!";}
+function restartQuiz(){currentQuestionIndex=0;score=0;quizDiv.style.display='block';resultDiv.style.display='none';loadQuestion();}
+loadQuestion();
+</script>
+<script>
+(function(){
+  var lastH=0;
+  function sendHeight(){
+    try{
+      var d=document, b=d.body, e=d.documentElement;
+      var h=Math.max(
+        b?b.scrollHeight:0, b?b.offsetHeight:0,
+        e?e.scrollHeight:0, e?e.offsetHeight:0, e?e.clientHeight:0
+      );
+      if(h && Math.abs(h-lastH)>1){
+        lastH=h;
+        parent.postMessage({gcGameHeight:h}, '*');
+      }
+    }catch(err){}
+  }
+  window.addEventListener('load', sendHeight);
+  window.addEventListener('resize', sendHeight);
+  document.addEventListener('DOMContentLoaded', sendHeight);
+  if(window.ResizeObserver){
+    try{ new ResizeObserver(sendHeight).observe(document.documentElement); }catch(err){}
+  }
+  if(window.MutationObserver){
+    try{
+      new MutationObserver(sendHeight).observe(document.documentElement, {childList:true, subtree:true, attributes:true});
+    }catch(err){}
+  }
+  for(var i=1;i<=20;i++){ setTimeout(sendHeight, i*150); }
+  setInterval(sendHeight, 600);
+})();
+</script>
+</body></html>

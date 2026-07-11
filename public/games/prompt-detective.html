@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Detective Agency</title>
+<style>
+  :root{
+    --paper:#FFF4D6;
+    --panel:#FFFFFF;
+    --ink:#1A1A1A;
+    --good:#2A9D8F;
+    --good-dark:#1f6f66;
+    --bad:#E63946;
+    --bad-dark:#a8262f;
+    --accent:#FFC93C;
+    --accent2:#FF6B9D;
+    --grey:#cfc8b0;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    
+    font-family:'Verdana','Segoe UI',sans-serif;
+    color:var(--ink);
+    background-color:var(--paper);
+    background-image:
+      radial-gradient(var(--ink) 1px, transparent 1.4px);
+    background-size:18px 18px;
+    background-position:-4px -4px;
+    background-attachment:fixed;
+    padding:24px 14px 60px;
+  }
+
+  .wrap{
+    max-width:640px;
+    margin:0 auto;
+  }
+
+  .title-block{
+    text-align:center;
+    margin-bottom:18px;
+  }
+
+  h1{
+    font-family:'Impact','Arial Black','Haettenschweiler',sans-serif;
+    font-size:clamp(28px,7vw,42px);
+    letter-spacing:1px;
+    margin:0;
+    color:var(--ink);
+    text-shadow:3px 3px 0 var(--accent);
+    transform:rotate(-1.5deg);
+  }
+
+  .subtitle{
+    font-size:14px;
+    font-weight:bold;
+    margin-top:8px;
+    color:var(--ink);
+    background:var(--panel);
+    display:inline-block;
+    padding:4px 12px;
+    border:3px solid var(--ink);
+    border-radius:20px;
+  }
+
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin:18px 0 16px;
+    flex-wrap:wrap;
+  }
+
+  .dots{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+
+  .dot{
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    border:2.5px solid var(--ink);
+    background:var(--grey);
+    transition:transform .25s ease, background .25s ease;
+  }
+  .dot.current{
+    box-shadow:0 0 0 3px var(--accent);
+    transform:scale(1.15);
+  }
+  .dot.right{background:var(--good);}
+  .dot.wrong{background:var(--bad);}
+
+  .score-badge{
+    font-family:'Impact','Arial Black',sans-serif;
+    font-size:14px;
+    background:var(--accent2);
+    border:3px solid var(--ink);
+    border-radius:10px;
+    padding:6px 10px;
+    box-shadow:3px 3px 0 var(--ink);
+    white-space:nowrap;
+  }
+
+  .panel{
+    background:var(--panel);
+    border:4px solid var(--ink);
+    border-radius:14px;
+    box-shadow:8px 8px 0 var(--ink);
+    padding:22px 20px;
+    margin-bottom:18px;
+    animation:slideIn .35s ease;
+  }
+
+  @keyframes slideIn{
+    from{opacity:0; transform:translateY(14px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  .eyebrow{
+    display:inline-block;
+    font-family:'Impact','Arial Black',sans-serif;
+    font-size:13px;
+    letter-spacing:1px;
+    background:var(--ink);
+    color:var(--paper);
+    padding:4px 10px;
+    border-radius:6px;
+    transform:rotate(-2deg);
+    margin-bottom:14px;
+  }
+
+  .speech{
+    position:relative;
+    background:#fffaf0;
+    border:3px solid var(--ink);
+    border-radius:16px;
+    padding:18px 20px;
+    font-size:18px;
+    line-height:1.45;
+    font-weight:bold;
+    margin-bottom:6px;
+  }
+  .speech::before{
+    content:"“";
+    font-family:Georgia,serif;
+    font-size:46px;
+    position:absolute;
+    top:-22px;
+    left:10px;
+    color:var(--accent2);
+  }
+  .speech::after{
+    content:"";
+    position:absolute;
+    bottom:-14px;
+    left:30px;
+    border-width:14px 14px 0 0;
+    border-style:solid;
+    border-color:var(--ink) transparent transparent transparent;
+  }
+  .speech .tail-fill{
+    position:absolute;
+    bottom:-9px;
+    left:33px;
+    border-width:11px 11px 0 0;
+    border-style:solid;
+    border-color:#fffaf0 transparent transparent transparent;
+  }
+
+  .ask{
+    margin:20px 0 14px;
+    font-weight:bold;
+    text-align:center;
+    font-size:16px;
+  }
+
+  .choices{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+
+  .choice-btn{
+    flex:1 1 140px;
+    font-family:'Impact','Arial Black',sans-serif;
+    font-size:16px;
+    letter-spacing:.5px;
+    color:#fff;
+    border:3px solid var(--ink);
+    border-radius:10px;
+    padding:14px 8px;
+    cursor:pointer;
+    box-shadow:5px 5px 0 var(--ink);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .choice-btn:hover:not(:disabled){
+    transform:translate(-2px,-2px);
+    box-shadow:7px 7px 0 var(--ink);
+  }
+  .choice-btn:active:not(:disabled){
+    transform:translate(2px,2px);
+    box-shadow:2px 2px 0 var(--ink);
+  }
+  .choice-btn:focus-visible{
+    outline:3px solid var(--accent);
+    outline-offset:2px;
+  }
+  .choice-btn:disabled{
+    cursor:default;
+    opacity:.55;
+  }
+  .choice-btn.good{background:var(--good);}
+  .choice-btn.bad{background:var(--bad);}
+
+  .feedback{
+    margin-top:18px;
+    display:none;
+  }
+  .feedback.show{display:block;}
+
+  .stamp{
+    font-family:'Impact','Arial Black',sans-serif;
+    font-size:22px;
+    letter-spacing:1px;
+    display:inline-block;
+    padding:8px 18px;
+    border:4px solid currentColor;
+    border-radius:8px;
+    transform:rotate(-6deg);
+    margin-bottom:12px;
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .stamp{ animation:stampIn .35s ease; }
+  }
+  @keyframes stampIn{
+    from{ transform:scale(2) rotate(-6deg); opacity:0; }
+    to{ transform:scale(1) rotate(-6deg); opacity:1; }
+  }
+  .stamp.right{color:var(--good-dark);}
+  .stamp.wrong{color:var(--bad-dark);}
+
+  .explain{
+    background:var(--paper);
+    border:2.5px dashed var(--ink);
+    border-radius:10px;
+    padding:14px 16px;
+    font-size:15px;
+    line-height:1.5;
+  }
+
+  .next-btn{
+    margin-top:16px;
+    width:100%;
+    font-family:'Impact','Arial Black',sans-serif;
+    font-size:16px;
+    color:var(--ink);
+    background:var(--accent);
+    border:3px solid var(--ink);
+    border-radius:10px;
+    padding:12px;
+    cursor:pointer;
+    box-shadow:5px 5px 0 var(--ink);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .next-btn:hover{
+    transform:translate(-2px,-2px);
+    box-shadow:7px 7px 0 var(--ink);
+  }
+  .next-btn:focus-visible{
+    outline:3px solid var(--accent2);
+    outline-offset:2px;
+  }
+
+  /* Results screen */
+  .results{
+    text-align:center;
+    display:none;
+  }
+  .results.show{display:block;}
+
+  .big-stamp{
+    font-family:'Impact','Arial Black',sans-serif;
+    font-size:clamp(26px,6vw,34px);
+    border:5px solid var(--ink);
+    border-radius:10px;
+    padding:10px 18px;
+    display:inline-block;
+    transform:rotate(-4deg);
+    margin-bottom:16px;
+    color:var(--bad-dark);
+  }
+
+  .score-line{
+    font-size:20px;
+    font-weight:bold;
+    margin-bottom:6px;
+  }
+
+  .rank{
+    font-family:'Impact','Arial Black',sans-serif;
+    font-size:22px;
+    margin:10px 0;
+    color:var(--accent2);
+    text-shadow:2px 2px 0 var(--ink);
+  }
+
+  .rank-msg{
+    font-size:15px;
+    margin-bottom:18px;
+    line-height:1.5;
+  }
+
+  .restart-btn{
+    font-family:'Impact','Arial Black',sans-serif;
+    font-size:18px;
+    color:#fff;
+    background:var(--accent2);
+    border:3px solid var(--ink);
+    border-radius:10px;
+    padding:14px 26px;
+    cursor:pointer;
+    box-shadow:5px 5px 0 var(--ink);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .restart-btn:hover{
+    transform:translate(-2px,-2px);
+    box-shadow:7px 7px 0 var(--ink);
+  }
+
+  .sr-only{
+    position:absolute;
+    width:1px;height:1px;
+    overflow:hidden;
+    clip:rect(0,0,0,0);
+  }
+
+  footer-note{
+    display:block;
+    text-align:center;
+    font-size:12px;
+    color:#6b6450;
+    margin-top:10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="title-block">
+    <h1>🔍 PROMPT DETECTIVE AGENCY</h1>
+    <div class="subtitle">Good Prompt or Bad Prompt? You decide!</div>
+  </div>
+
+  <div class="topbar">
+    <div class="dots" id="dots" aria-hidden="true"></div>
+    <div class="score-badge" id="scoreBadge">🏅 0 / 10 Cases Solved</div>
+  </div>
+
+  <div class="panel" id="caseCard">
+    <span class="eyebrow" id="caseLabel">CASE FILE #01</span>
+    <div class="speech">
+      <span id="promptText">Loading case...</span>
+      <span class="tail-fill"></span>
+    </div>
+    <p class="ask">Is this a GOOD prompt or a BAD prompt?</p>
+    <div class="choices">
+      <button class="choice-btn good" id="goodBtn">✅ GOOD PROMPT</button>
+      <button class="choice-btn bad" id="badBtn">❌ BAD PROMPT</button>
+    </div>
+
+    <div class="feedback" id="feedback" aria-live="polite">
+      <div class="stamp" id="stampText">NICE WORK!</div>
+      <div class="explain" id="explainText"></div>
+      <button class="next-btn" id="nextBtn">NEXT CASE ➜</button>
+    </div>
+  </div>
+
+  <div class="panel results" id="resultsCard">
+    <div class="big-stamp" id="bigStamp">CASE CLOSED</div>
+    <div class="score-line" id="finalScoreLine">You solved 0 / 10 cases!</div>
+    <div class="rank" id="rankTitle">Detective in Training 📝</div>
+    <p class="rank-msg" id="rankMsg">Every great detective starts somewhere. Try again to sharpen your skills!</p>
+    <button class="restart-btn" id="restartBtn">🔁 PLAY AGAIN</button>
+  </div>
+
+  <span class="sr-only" id="liveRegion" aria-live="polite"></span>
+
+</div>
+
+<script>
+(function(){
+
+  const cases = [
+    {
+      prompt: "homework help",
+      type: "bad",
+      explain: "Too short to crack the case! It doesn't say which subject or what you need help with. Add details like the topic and exactly what's confusing you."
+    },
+    {
+      prompt: "Can you explain how photosynthesis works in simple words, with one real-life example?",
+      type: "good",
+      explain: "Solid lead! It names the exact topic, asks for simple language, and even asks for an example. That's everything an AI needs to help well."
+    },
+    {
+      prompt: "do my essay for me right now i need it in 5 mins",
+      type: "bad",
+      explain: "Busted! This asks the AI to do all the work instead of helping you learn, and it's missing the topic, length, or any real detail about the essay."
+    },
+    {
+      prompt: "tell me everything",
+      type: "bad",
+      explain: "Mystery unsolved! 'Everything' about what? Without a topic, the AI has no clue where to even start looking."
+    },
+    {
+      prompt: "I'm in 7th grade learning fractions. Can you show me step-by-step how to add 1/4 + 1/3?",
+      type: "good",
+      explain: "Great detective work! It shares the grade level, the exact topic, and the specific problem, and asks for steps instead of just the final answer."
+    },
+    {
+      prompt: "Can you give me 3 fun facts about the solar system for my school project?",
+      type: "good",
+      explain: "Case closed! It says exactly how many facts, the topic, and why you need them — clear and easy to act on."
+    },
+    {
+      prompt: "answer all my exam questions for me",
+      type: "bad",
+      explain: "Caught red-handed! This doesn't even share the questions, and asking an AI to answer an exam for you wouldn't actually help you learn — or be fair."
+    },
+    {
+      prompt: "I don't understand this problem: 2x + 5 = 15. Can you show me how to solve it step by step?",
+      type: "good",
+      explain: "Nice clue-gathering! It includes the exact problem and asks for an explanation of the steps, not just the final answer — perfect for actually learning."
+    },
+    {
+      prompt: "write",
+      type: "bad",
+      explain: "One word isn't enough evidence! Write what — a poem, a story, an email? The AI needs a topic and some details to help."
+    },
+    {
+      prompt: "Can you suggest 3 creative title ideas for a story about a robot who learns to paint?",
+      type: "good",
+      explain: "Mystery solved like a pro! It's specific about how many ideas, the topic, and the creative angle — the AI has everything it needs."
+    }
+  ];
+
+  let current = 0;
+  let score = 0;
+  const results = new Array(cases.length).fill(null); // 'right' | 'wrong'
+
+  const dotsEl = document.getElementById('dots');
+  const scoreBadge = document.getElementById('scoreBadge');
+  const caseCard = document.getElementById('caseCard');
+  const resultsCard = document.getElementById('resultsCard');
+  const caseLabel = document.getElementById('caseLabel');
+  const promptText = document.getElementById('promptText');
+  const goodBtn = document.getElementById('goodBtn');
+  const badBtn = document.getElementById('badBtn');
+  const feedback = document.getElementById('feedback');
+  const stampText = document.getElementById('stampText');
+  const explainText = document.getElementById('explainText');
+  const nextBtn = document.getElementById('nextBtn');
+  const liveRegion = document.getElementById('liveRegion');
+
+  function buildDots(){
+    dotsEl.innerHTML = '';
+    for(let i=0;i<cases.length;i++){
+      const d = document.createElement('div');
+      d.className = 'dot';
+      d.id = 'dot-'+i;
+      dotsEl.appendChild(d);
+    }
+  }
+
+  function updateDots(){
+    for(let i=0;i<cases.length;i++){
+      const d = document.getElementById('dot-'+i);
+      d.className = 'dot';
+      if(results[i] === 'right') d.classList.add('right');
+      if(results[i] === 'wrong') d.classList.add('wrong');
+      if(i === current) d.classList.add('current');
+    }
+  }
+
+  function renderCase(){
+    feedback.classList.remove('show');
+    goodBtn.disabled = false;
+    badBtn.disabled = false;
+    caseLabel.textContent = 'CASE FILE #' + String(current+1).padStart(2,'0');
+    promptText.textContent = '"' + cases[current].prompt + '"';
+    updateDots();
+    caseCard.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  function updateScoreBadge(){
+    scoreBadge.textContent = '🏅 ' + score + ' / ' + cases.length + ' Cases Solved';
+  }
+
+  function handleAnswer(choice){
+    const correctType = cases[current].type;
+    const isRight = choice === correctType;
+
+    goodBtn.disabled = true;
+    badBtn.disabled = true;
+
+    if(isRight){
+      score++;
+      results[current] = 'right';
+      stampText.textContent = 'NICE WORK!';
+      stampText.className = 'stamp right';
+    } else {
+      results[current] = 'wrong';
+      stampText.textContent = 'NOT QUITE!';
+      stampText.className = 'stamp wrong';
+    }
+
+    explainText.textContent = cases[current].explain;
+    feedback.classList.add('show');
+    updateScoreBadge();
+    updateDots();
+
+    nextBtn.textContent = (current === cases.length - 1) ? 'SEE RESULTS ➜' : 'NEXT CASE ➜';
+    liveRegion.textContent = (isRight ? 'Correct. ' : 'Not quite. ') + cases[current].explain;
+
+    feedback.scrollIntoView({behavior:'smooth', block:'end'});
+  }
+
+  function showResults(){
+    caseCard.style.display = 'none';
+    resultsCard.classList.add('show');
+
+    document.getElementById('finalScoreLine').textContent =
+      'You solved ' + score + ' / ' + cases.length + ' cases!';
+
+    let rankTitle, rankMsg, stamp;
+    if(score >= 9){
+      rankTitle = '🏆 Master Detective';
+      stamp = 'CASE CLOSED';
+      rankMsg = "Incredible! You can spot a vague or sloppy prompt from a mile away. Keep writing clear, specific prompts like that.";
+    } else if(score >= 7){
+      rankTitle = '🕶️ Skilled Investigator';
+      stamp = 'CASE CLOSED';
+      rankMsg = "Really strong work! You've got a sharp eye for clear prompts. A little more practice and you'll be a Master Detective.";
+    } else if(score >= 5){
+      rankTitle = '🔍 Junior Detective';
+      stamp = 'CASE IN PROGRESS';
+      rankMsg = "Good effort! You're starting to notice the clues — remember, the best prompts are clear, specific, and polite. Try again to level up!";
+    } else {
+      rankTitle = '📝 Detective in Training';
+      stamp = 'CASE REOPENED';
+      rankMsg = "Every great detective starts somewhere! Look back at the explanations, then give it another go — you'll spot the patterns in no time.";
+    }
+
+    document.getElementById('bigStamp').textContent = stamp;
+    document.getElementById('rankTitle').textContent = rankTitle;
+    document.getElementById('rankMsg').textContent = rankMsg;
+
+    resultsCard.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  function restart(){
+    current = 0;
+    score = 0;
+    results.fill(null);
+    updateScoreBadge();
+    resultsCard.classList.remove('show');
+    caseCard.style.display = '';
+    renderCase();
+  }
+
+  goodBtn.addEventListener('click', () => handleAnswer('good'));
+  badBtn.addEventListener('click', () => handleAnswer('bad'));
+
+  nextBtn.addEventListener('click', () => {
+    if(current === cases.length - 1){
+      showResults();
+    } else {
+      current++;
+      renderCase();
+    }
+  });
+
+  document.getElementById('restartBtn').addEventListener('click', restart);
+
+  // init
+  buildDots();
+  updateScoreBadge();
+  renderCase();
+
+})();
+</script>
+
+<script>
+(function(){
+  var lastH=0;
+  function sendHeight(){
+    try{
+      var d=document, b=d.body, e=d.documentElement;
+      var h=Math.max(
+        b?b.scrollHeight:0, b?b.offsetHeight:0,
+        e?e.scrollHeight:0, e?e.offsetHeight:0, e?e.clientHeight:0
+      );
+      if(h && Math.abs(h-lastH)>1){
+        lastH=h;
+        parent.postMessage({gcGameHeight:h}, '*');
+      }
+    }catch(err){}
+  }
+  window.addEventListener('load', sendHeight);
+  window.addEventListener('resize', sendHeight);
+  document.addEventListener('DOMContentLoaded', sendHeight);
+  if(window.ResizeObserver){
+    try{ new ResizeObserver(sendHeight).observe(document.documentElement); }catch(err){}
+  }
+  if(window.MutationObserver){
+    try{
+      new MutationObserver(sendHeight).observe(document.documentElement, {childList:true, subtree:true, attributes:true});
+    }catch(err){}
+  }
+  for(var i=1;i<=20;i++){ setTimeout(sendHeight, i*150); }
+  setInterval(sendHeight, 600);
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Train the Robot — A Machine Learning Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-navy:#0b1b33;
+    --bg-navy-2:#102a4d;
+    --bg-panel:#14315a;
+    --grid-line:rgba(120,180,255,0.07);
+    --grid-line-strong:rgba(120,180,255,0.14);
+    --accent-amber:#ffb454;
+    --accent-amber-dim:#caa15f;
+    --accent-cyan:#5ad1e6;
+    --good:#3ddc97;
+    --bad:#ff6b6b;
+    --text-light:#f2f6fc;
+    --text-muted:#9fb3cc;
+    --font-display:'Baloo 2', system-ui, sans-serif;
+    --font-body:'Inter', system-ui, sans-serif;
+    --font-mono:'JetBrains Mono', 'Courier New', monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg-navy);
+    color:var(--text-light);
+    font-family:var(--font-body);
+    
+    overflow-x:hidden;
+  }
+
+  .blueprint-bg{
+    position:fixed; inset:0; z-index:0;
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+      linear-gradient(var(--grid-line-strong) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line-strong) 1px, transparent 1px);
+    background-size:20px 20px, 20px 20px, 100px 100px, 100px 100px;
+    background-color:var(--bg-navy);
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(90,209,230,0.10), transparent),
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+      linear-gradient(var(--grid-line-strong) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line-strong) 1px, transparent 1px);
+    background-size:auto, 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+  }
+
+  .app{
+    position:relative; z-index:1;
+    max-width:760px;
+    margin:0 auto;
+    padding:18px 18px 48px;
+    
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    padding:6px 4px 18px;
+    flex-wrap:wrap;
+  }
+  .brand{display:flex; align-items:center; gap:10px;}
+  .brand-emoji{font-size:30px; filter:drop-shadow(0 0 8px rgba(255,180,84,0.35));}
+  .brand-text{font-family:var(--font-display); font-weight:800; font-size:22px; letter-spacing:0.3px;}
+
+  .brainmeter{
+    display:flex; flex-direction:column; align-items:flex-end; gap:5px;
+  }
+  .brainmeter-label{
+    font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px;
+    color:var(--text-muted); text-transform:uppercase;
+  }
+  .neurons{display:flex; gap:5px;}
+  .neuron{
+    width:11px; height:11px; border-radius:50%;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.18);
+    transition:all .35s ease;
+  }
+  .neuron.lit{
+    background:var(--accent-amber);
+    border-color:var(--accent-amber);
+    box-shadow:0 0 10px 2px rgba(255,180,84,0.65);
+  }
+
+  .infobtn{
+    background:none; border:1px solid var(--grid-line-strong); color:var(--text-muted);
+    font-family:var(--font-mono); font-size:11px; padding:5px 10px; border-radius:20px;
+    cursor:pointer; transition:all .2s;
+  }
+  .infobtn:hover{ color:var(--text-light); border-color:var(--accent-cyan); }
+
+  .infopanel{
+    background:var(--bg-panel); border:1px solid var(--grid-line-strong);
+    border-radius:14px; padding:16px 18px; margin:-4px 0 18px;
+    font-size:14px; line-height:1.55; color:var(--text-muted);
+    display:none;
+  }
+  .infopanel.open{display:block;}
+  .infopanel strong{color:var(--accent-cyan);}
+
+  /* ---------- stage / card ---------- */
+  .stage{flex:1; display:flex; flex-direction:column; justify-content:center;}
+
+  .card{
+    background:var(--bg-panel);
+    border:1px solid var(--grid-line-strong);
+    border-radius:20px;
+    padding:32px 28px;
+    position:relative;
+    box-shadow:0 20px 60px -20px rgba(0,0,0,0.5);
+    animation:cardIn .35s ease;
+  }
+  @keyframes cardIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  .eyebrow{
+    font-family:var(--font-mono); font-size:11px; letter-spacing:2px;
+    color:var(--accent-cyan); text-transform:uppercase; margin-bottom:8px;
+  }
+  h1.title{
+    font-family:var(--font-display); font-weight:800; font-size:30px;
+    margin:0 0 10px; line-height:1.15;
+  }
+  p.lead{ color:var(--text-muted); font-size:15.5px; line-height:1.6; margin:0 0 22px; }
+
+  /* dataset picker */
+  .dataset-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:6px; }
+  @media (max-width:520px){ .dataset-grid{grid-template-columns:1fr;} }
+  .dataset-card{
+    background:var(--bg-navy-2); border:1px solid var(--grid-line-strong);
+    border-radius:16px; padding:20px 16px; text-align:center; cursor:pointer;
+    transition:transform .15s, border-color .15s, box-shadow .15s;
+  }
+  .dataset-card:hover{ transform:translateY(-3px); border-color:var(--accent-amber); box-shadow:0 10px 26px -12px rgba(255,180,84,0.35); }
+  .dataset-emoji{font-size:40px; margin-bottom:8px;}
+  .dataset-name{font-family:var(--font-display); font-weight:700; font-size:17px; margin-bottom:4px;}
+  .dataset-sub{font-size:12.5px; color:var(--text-muted); font-family:var(--font-mono);}
+
+  /* robot face */
+  .robot-wrap{ display:flex; justify-content:center; margin:4px 0 22px; }
+  .robot-face{
+    width:96px; height:88px; background:linear-gradient(145deg,#1c3a63,#0e2545);
+    border:2px solid var(--accent-cyan); border-radius:22px; position:relative;
+    box-shadow:0 0 0 6px rgba(90,209,230,0.07), 0 10px 30px -10px rgba(90,209,230,0.4);
+  }
+  .robot-face::before{
+    content:''; position:absolute; top:-14px; left:50%; transform:translateX(-50%);
+    width:3px; height:14px; background:var(--accent-cyan);
+  }
+  .robot-face::after{
+    content:''; position:absolute; top:-20px; left:50%; transform:translateX(-50%);
+    width:8px; height:8px; border-radius:50%; background:var(--accent-amber);
+    box-shadow:0 0 8px 2px rgba(255,180,84,0.7);
+  }
+  .robot-eyes{ position:absolute; top:28px; left:0; right:0; display:flex; justify-content:center; gap:18px; }
+  .eye{ width:14px; height:14px; border-radius:50%; background:var(--accent-cyan); box-shadow:0 0 8px rgba(90,209,230,0.8); transition:all .2s; }
+  .robot-mouth{
+    position:absolute; bottom:18px; left:50%; transform:translateX(-50%);
+    width:34px; height:10px; border:2px solid var(--accent-cyan); border-top:none;
+    border-radius:0 0 16px 16px; transition:all .2s;
+  }
+  .robot-face.mood-thinking .eye{ animation:blink 1s infinite; }
+  @keyframes blink{ 0%,100%{transform:scaleY(1);} 50%{transform:scaleY(0.15);} }
+  .robot-face.mood-happy .eye{ background:var(--good); box-shadow:0 0 10px rgba(61,220,151,0.8); }
+  .robot-face.mood-happy .robot-mouth{ width:38px; height:14px; border-color:var(--good); border-radius:0 0 20px 20px; }
+  .robot-face.mood-confused .eye{ background:var(--bad); box-shadow:0 0 10px rgba(255,107,107,0.8); }
+  .robot-face.mood-confused .eye:first-child{ transform:translateY(-3px); }
+  .robot-face.mood-confused .robot-mouth{ width:26px; height:8px; border-radius:16px; transform:translateX(-50%) rotate(-4deg); }
+
+  /* training item */
+  .item-display{
+    text-align:center; margin:6px 0 24px;
+  }
+  .item-emoji{
+    font-size:76px; line-height:1;
+    animation:popIn .3s ease;
+    display:inline-block;
+  }
+  @keyframes popIn{ from{transform:scale(0.5); opacity:0;} to{transform:scale(1); opacity:1;} }
+  .item-progress{
+    font-family:var(--font-mono); font-size:12px; color:var(--text-muted);
+    text-align:center; margin-bottom:18px; letter-spacing:1px;
+  }
+
+  .choice-row{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .choice-btn{
+    flex:1; min-width:140px; max-width:220px;
+    background:var(--bg-navy-2); border:2px solid var(--grid-line-strong);
+    color:var(--text-light); border-radius:14px; padding:16px 14px;
+    font-family:var(--font-display); font-weight:700; font-size:16px;
+    cursor:pointer; transition:all .15s; display:flex; flex-direction:column; align-items:center; gap:6px;
+  }
+  .choice-btn .choice-emoji{ font-size:26px; }
+  .choice-btn:hover{ border-color:var(--accent-amber); transform:translateY(-2px); }
+  .choice-btn:active{ transform:translateY(0); }
+  .choice-btn:disabled{ opacity:.5; cursor:default; transform:none; }
+
+  .feedback-banner{
+    margin-top:18px; padding:13px 16px; border-radius:12px;
+    font-size:14.5px; line-height:1.5; text-align:center;
+    animation:popIn .25s ease;
+  }
+  .feedback-banner.good{ background:rgba(61,220,151,0.12); border:1px solid rgba(61,220,151,0.4); color:var(--good); }
+  .feedback-banner.bad{ background:rgba(255,107,107,0.12); border:1px solid rgba(255,107,107,0.4); color:var(--bad); }
+
+  .primary-btn{
+    background:var(--accent-amber); color:#1a1304; border:none; border-radius:12px;
+    font-family:var(--font-display); font-weight:700; font-size:15.5px;
+    padding:13px 22px; cursor:pointer; transition:all .15s;
+    box-shadow:0 8px 22px -8px rgba(255,180,84,0.6);
+  }
+  .primary-btn:hover{ transform:translateY(-2px); box-shadow:0 12px 26px -8px rgba(255,180,84,0.75); }
+  .secondary-btn{
+    background:none; border:1.5px solid var(--grid-line-strong); color:var(--text-light);
+    border-radius:12px; font-family:var(--font-display); font-weight:700; font-size:14.5px;
+    padding:12px 20px; cursor:pointer; transition:all .15s;
+  }
+  .secondary-btn:hover{ border-color:var(--accent-cyan); color:var(--accent-cyan); }
+
+  .btn-row{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:22px; }
+
+  /* confidence bar */
+  .confidence-wrap{ margin:16px auto 0; max-width:320px; }
+  .confidence-label{ font-family:var(--font-mono); font-size:11px; color:var(--text-muted); display:flex; justify-content:space-between; margin-bottom:6px; }
+  .confidence-track{ height:10px; background:rgba(255,255,255,0.08); border-radius:6px; overflow:hidden; }
+  .confidence-fill{ height:100%; background:linear-gradient(90deg, var(--accent-cyan), var(--accent-amber)); width:0%; transition:width .6s cubic-bezier(.2,.9,.3,1); border-radius:6px; }
+
+  .reveal-row{ display:flex; justify-content:center; gap:28px; margin-top:18px; flex-wrap:wrap; }
+  .reveal-col{ text-align:center; min-width:110px; }
+  .reveal-who{ font-family:var(--font-mono); font-size:11px; color:var(--text-muted); letter-spacing:1px; margin-bottom:6px; text-transform:uppercase;}
+  .reveal-guess{ font-family:var(--font-display); font-weight:700; font-size:17px; display:flex; align-items:center; justify-content:center; gap:6px;}
+  .reveal-mark{ font-size:18px; }
+  .reveal-mark.ok{ color:var(--good); }
+  .reveal-mark.no{ color:var(--bad); }
+
+  .truth-banner{
+    text-align:center; margin-top:16px; font-family:var(--font-mono); font-size:13px; color:var(--text-muted);
+  }
+  .truth-banner b{ color:var(--accent-cyan); font-family:var(--font-body); }
+
+  /* results */
+  .score-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:8px 0 22px; }
+  @media (max-width:480px){ .score-grid{grid-template-columns:1fr;} }
+  .score-box{ background:var(--bg-navy-2); border:1px solid var(--grid-line-strong); border-radius:16px; padding:20px; text-align:center; }
+  .score-box .score-who{ font-family:var(--font-mono); font-size:11px; letter-spacing:1.5px; color:var(--text-muted); text-transform:uppercase; }
+  .score-box .score-num{ font-family:var(--font-display); font-weight:800; font-size:40px; margin:6px 0 2px; }
+  .score-box.robot .score-num{ color:var(--accent-amber); }
+  .score-box.student .score-num{ color:var(--accent-cyan); }
+  .score-box .score-sub{ font-size:12px; color:var(--text-muted); }
+
+  .verdict{
+    background:rgba(90,209,230,0.08); border:1px solid rgba(90,209,230,0.3);
+    border-radius:14px; padding:16px 18px; font-size:14.5px; line-height:1.6; color:var(--text-light); margin-bottom:8px;
+  }
+  .verdict b{ color:var(--accent-amber); }
+
+  .balance-row{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
+  .balance-pill{
+    font-family:var(--font-mono); font-size:11.5px; padding:6px 11px; border-radius:20px;
+    background:rgba(255,255,255,0.05); border:1px solid var(--grid-line-strong); color:var(--text-muted);
+  }
+
+  footer.tag{
+    text-align:center; margin-top:28px; font-family:var(--font-mono);
+    font-size:11px; color:rgba(159,179,204,0.5); letter-spacing:0.5px;
+  }
+
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+
+<div class="blueprint-bg"></div>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand"><span class="brand-emoji">🤖</span><span class="brand-text">Train the Robot</span></div>
+    <div style="display:flex; align-items:center; gap:14px;">
+      <button class="infobtn" id="infoToggle" onclick="toggleInfo()">ℹ️ How this works</button>
+      <div class="brainmeter">
+        <span class="brainmeter-label">Brain Power</span>
+        <div class="neurons" id="neurons"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="infopanel" id="infoPanel">
+    Every picture you label becomes <strong>training data</strong> — an example the robot uses to learn a pattern.
+    The more <em>correctly labeled</em> examples you give it, the better it gets at recognizing brand‑new pictures it has
+    never seen before (that's the <strong>test data</strong>). But if you label things incorrectly on purpose, the robot
+    learns the wrong pattern too — real AI systems work the same way: <strong>garbage in, garbage out.</strong>
+  </div>
+
+  <div class="stage" id="stage"><!-- rendered by JS --></div>
+
+  <footer class="tag">A MACHINE LEARNING CONCEPT GAME · NO DATA LEAVES THIS PAGE</footer>
+</div>
+
+<script>
+/* ---------------- datasets ---------------- */
+const DATASETS = {
+  animals: {
+    name: "Cats vs. Dogs",
+    icon: "🐾",
+    sub: "Classic image classification",
+    labelA: { id:'cat', name:'Cat', emoji:'🐱' },
+    labelB: { id:'dog', name:'Dog', emoji:'🐶' },
+    train: [
+      {emoji:'🐱', label:'cat'}, {emoji:'😺', label:'cat'}, {emoji:'🐈', label:'cat'},
+      {emoji:'😸', label:'cat'}, {emoji:'🙀', label:'cat'},
+      {emoji:'🐶', label:'dog'}, {emoji:'🐕', label:'dog'}, {emoji:'🐩', label:'dog'},
+      {emoji:'🦮', label:'dog'}, {emoji:'🐶', label:'dog'}
+    ],
+    test: [
+      {emoji:'😻', label:'cat'}, {emoji:'😼', label:'cat'}, {emoji:'😾', label:'cat'}, {emoji:'🐱', label:'cat'},
+      {emoji:'🐕', label:'dog'}, {emoji:'🐩', label:'dog'}, {emoji:'🐶', label:'dog'}, {emoji:'🦮', label:'dog'}
+    ]
+  },
+  food: {
+    name: "Healthy vs. Junk Food",
+    icon: "🍽️",
+    sub: "Good choice / bad choice",
+    labelA: { id:'healthy', name:'Healthy', emoji:'🥦' },
+    labelB: { id:'junk', name:'Junk Food', emoji:'🍔' },
+    train: [
+      {emoji:'🍎', label:'healthy'}, {emoji:'🥦', label:'healthy'}, {emoji:'🥕', label:'healthy'},
+      {emoji:'🍇', label:'healthy'}, {emoji:'🍌', label:'healthy'},
+      {emoji:'🍔', label:'junk'}, {emoji:'🍟', label:'junk'}, {emoji:'🍩', label:'junk'},
+      {emoji:'🍕', label:'junk'}, {emoji:'🥤', label:'junk'}
+    ],
+    test: [
+      {emoji:'🍊', label:'healthy'}, {emoji:'🥗', label:'healthy'}, {emoji:'🍓', label:'healthy'}, {emoji:'🥑', label:'healthy'},
+      {emoji:'🌭', label:'junk'}, {emoji:'🍫', label:'junk'}, {emoji:'🍪', label:'junk'}, {emoji:'🧁', label:'junk'}
+    ]
+  }
+};
+
+/* ---------------- game state ---------------- */
+let game = null;
+
+function freshState(datasetId){
+  const ds = DATASETS[datasetId];
+  return {
+    datasetId, dataset: ds,
+    phase: 'train',
+    trainQueue: shuffle(ds.train.slice()),
+    trainIdx: 0,
+    testQueue: [],
+    testIdx: 0,
+    testTotal: 8,
+    stats: { [ds.labelA.id]: {correct:0, wrong:0}, [ds.labelB.id]: {correct:0, wrong:0} },
+    studentScore: 0,
+    robotScore: 0,
+    testResults: [],
+    pendingTestItem: null,
+    testSub: 'guess', // guess -> thinking -> reveal
+    studentGuessId: null,
+    robotGuessId: null,
+    robotConfidence: null,
+    robotCorrect: null
+  };
+}
+
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+
+/* ---------------- brain power / neurons ---------------- */
+function brainPower(){
+  if(!game) return 0;
+  const ds = game.dataset;
+  const a = game.stats[ds.labelA.id], b = game.stats[ds.labelB.id];
+  const raw = (a.correct + b.correct) - (a.wrong + b.wrong)*1.2;
+  const pct = Math.max(0, Math.min(100, Math.round((raw/16)*100)));
+  return pct;
+}
+
+function renderNeurons(){
+  const power = brainPower();
+  const lit = Math.round(power/10);
+  const wrap = document.getElementById('neurons');
+  wrap.innerHTML = '';
+  for(let i=0;i<10;i++){
+    const d = document.createElement('div');
+    d.className = 'neuron' + (i<lit ? ' lit' : '');
+    wrap.appendChild(d);
+  }
+}
+
+function toggleInfo(){
+  document.getElementById('infoPanel').classList.toggle('open');
+}
+
+/* ---------------- skill model ---------------- */
+function skillFor(labelId){
+  const s = game.stats[labelId];
+  return Math.max(0, s.correct - s.wrong*1.2);
+}
+
+function robotPredict(trueLabel, otherLabel){
+  const skillTrue = skillFor(trueLabel);
+  const skillOther = skillFor(otherLabel);
+  let chance = 50 + skillTrue*9 - skillOther*3;
+  chance = Math.max(8, Math.min(94, chance));
+  const correct = Math.random()*100 < chance;
+  const guess = correct ? trueLabel : otherLabel;
+  const confidence = Math.max(52, Math.min(97, Math.round(50 + Math.abs(chance-50)*0.85 + (Math.random()*8-4))));
+  return { guess, confidence, correct };
+}
+
+/* ---------------- render dispatcher ---------------- */
+function render(){
+  renderNeurons();
+  const stage = document.getElementById('stage');
+  if(!game){ stage.innerHTML = renderIntro(); return; }
+  if(game.phase === 'train') stage.innerHTML = renderTrain();
+  else if(game.phase === 'testIntro') stage.innerHTML = renderTestIntro();
+  else if(game.phase === 'test') stage.innerHTML = renderTest();
+  else if(game.phase === 'results') stage.innerHTML = renderResults();
+}
+
+/* ---------------- INTRO ---------------- */
+function renderIntro(){
+  let cards = '';
+  for(const id in DATASETS){
+    const d = DATASETS[id];
+    cards += `
+      <div class="dataset-card" onclick="startDataset('${id}')">
+        <div class="dataset-emoji">${d.icon}</div>
+        <div class="dataset-name">${d.name}</div>
+        <div class="dataset-sub">${d.sub}</div>
+      </div>`;
+  }
+  return `
+    <div class="card">
+      <div class="eyebrow">Machine Learning · Mini Game</div>
+      <h1 class="title">Pick something to teach your robot</h1>
+      <p class="lead">You'll show the robot labeled examples to train it, then test it on new pictures it has never
+      seen. The robot only knows what you teach it — choose carefully!</p>
+      <div class="dataset-grid">${cards}</div>
+    </div>`;
+}
+
+function startDataset(id){
+  game = freshState(id);
+  pickTrainItem();
+  render();
+}
+
+/* ---------------- TRAIN ---------------- */
+function pickTrainItem(){
+  game.currentTrainItem = game.trainQueue[game.trainIdx];
+  game.trainFeedback = null;
+}
+
+function renderTrain(){
+  const ds = game.dataset;
+  const total = game.trainQueue.length;
+  const item = game.currentTrainItem;
+  const fb = game.trainFeedback;
+
+  let feedbackHtml = '';
+  if(fb){
+    feedbackHtml = `<div class="feedback-banner ${fb.good ? 'good' : 'bad'}">${fb.text}</div>`;
+  }
+
+  const disabled = fb ? 'disabled' : '';
+
+  return `
+    <div class="card">
+      <div class="eyebrow">Step 1 · Training the robot</div>
+      <h1 class="title">What is this?</h1>
+      <p class="lead">Label each example so the robot can learn the pattern.</p>
+
+      <div class="item-progress">EXAMPLE ${game.trainIdx+1} OF ${total}</div>
+      <div class="item-display"><span class="item-emoji">${item.emoji}</span></div>
+
+      <div class="choice-row">
+        <button class="choice-btn" ${disabled} onclick="chooseTrainLabel('${ds.labelA.id}')">
+          <span class="choice-emoji">${ds.labelA.emoji}</span>${ds.labelA.name}
+        </button>
+        <button class="choice-btn" ${disabled} onclick="chooseTrainLabel('${ds.labelB.id}')">
+          <span class="choice-emoji">${ds.labelB.emoji}</span>${ds.labelB.name}
+        </button>
+      </div>
+
+      ${feedbackHtml}
+
+      ${fb ? `<div class="btn-row"><button class="primary-btn" onclick="advanceTrain()">${game.trainIdx+1 < total ? 'Next example →' : 'Finish training →'}</button></div>` : ''}
+    </div>`;
+}
+
+function chooseTrainLabel(chosenId){
+  const ds = game.dataset;
+  const item = game.currentTrainItem;
+  const correct = chosenId === item.label;
+  game.stats[chosenId][correct ? 'correct' : 'wrong']++;
+
+  const chosenName = (ds.labelA.id === chosenId ? ds.labelA.name : ds.labelB.name);
+  const trueName = (ds.labelA.id === item.label ? ds.labelA.name : ds.labelB.name);
+
+  game.trainFeedback = correct
+    ? { good:true, text:`✅ Correct! The robot just learned a real ${trueName.toLowerCase()} pattern.` }
+    : { good:false, text:`⚠️ Actually that's a ${trueName}. Mislabeling teaches the robot the wrong pattern!` };
+
+  render();
+}
+
+function advanceTrain(){
+  game.trainIdx++;
+  if(game.trainIdx >= game.trainQueue.length){
+    game.phase = 'testIntro';
+  } else {
+    pickTrainItem();
+  }
+  render();
+}
+
+/* ---------------- TEST INTRO ---------------- */
+function renderTestIntro(){
+  const ds = game.dataset;
+  const a = game.stats[ds.labelA.id], b = game.stats[ds.labelB.id];
+  return `
+    <div class="card">
+      <div class="eyebrow">Step 2 · Time to test</div>
+      <div class="robot-wrap"><div class="robot-face mood-neutral"><div class="robot-eyes"><div class="eye"></div><div class="eye"></div></div><div class="robot-mouth"></div></div></div>
+      <h1 class="title" style="text-align:center;">Training complete!</h1>
+      <p class="lead" style="text-align:center;">
+        You showed the robot <b>${a.correct+a.wrong}</b> ${ds.labelA.name.toLowerCase()} example(s) and
+        <b>${b.correct+b.wrong}</b> ${ds.labelB.name.toLowerCase()} example(s).
+        Now let's see how well it learned, using pictures it has never seen before.
+      </p>
+      <div class="btn-row"><button class="primary-btn" onclick="startTest()">Test the robot →</button></div>
+    </div>`;
+}
+
+function startTest(){
+  game.testQueue = shuffle(game.dataset.test.slice()).slice(0, game.testTotal);
+  game.testIdx = 0;
+  game.phase = 'test';
+  game.testSub = 'guess';
+  game.pendingTestItem = game.testQueue[0];
+  render();
+}
+
+/* ---------------- TEST ---------------- */
+function renderTest(){
+  const ds = game.dataset;
+  const item = game.pendingTestItem;
+  const sub = game.testSub;
+
+  let body = '';
+
+  if(sub === 'guess'){
+    body = `
+      <div class="choice-row">
+        <button class="choice-btn" onclick="studentGuess('${ds.labelA.id}')">
+          <span class="choice-emoji">${ds.labelA.emoji}</span>${ds.labelA.name}
+        </button>
+        <button class="choice-btn" onclick="studentGuess('${ds.labelB.id}')">
+          <span class="choice-emoji">${ds.labelB.emoji}</span>${ds.labelB.name}
+        </button>
+      </div>
+      <p class="lead" style="text-align:center; margin-top:18px; margin-bottom:0;">What do <b>you</b> think it is?</p>`;
+  } else if(sub === 'thinking'){
+    body = `
+      <div class="robot-wrap"><div class="robot-face mood-thinking"><div class="robot-eyes"><div class="eye"></div><div class="eye"></div></div><div class="robot-mouth"></div></div></div>
+      <p class="lead" style="text-align:center;">🤖 thinking…</p>`;
+  } else if(sub === 'reveal'){
+    const ds2 = game.dataset;
+    const studentName = nameFor(ds2, game.studentGuessId);
+    const robotName = nameFor(ds2, game.robotGuessId);
+    const trueName = nameFor(ds2, item.label);
+    const studentCorrect = game.studentGuessId === item.label;
+    const mood = game.robotCorrect ? 'mood-happy' : 'mood-confused';
+
+    body = `
+      <div class="robot-wrap"><div class="robot-face ${mood}"><div class="robot-eyes"><div class="eye"></div><div class="eye"></div></div><div class="robot-mouth"></div></div></div>
+      <div class="confidence-wrap">
+        <div class="confidence-label"><span>ROBOT CONFIDENCE</span><span>${game.robotConfidence}%</span></div>
+        <div class="confidence-track"><div class="confidence-fill" style="width:${game.robotConfidence}%"></div></div>
+      </div>
+      <div class="reveal-row">
+        <div class="reveal-col">
+          <div class="reveal-who">You guessed</div>
+          <div class="reveal-guess">${studentName} <span class="reveal-mark ${studentCorrect?'ok':'no'}">${studentCorrect?'✓':'✗'}</span></div>
+        </div>
+        <div class="reveal-col">
+          <div class="reveal-who">Robot guessed</div>
+          <div class="reveal-guess">${robotName} <span class="reveal-mark ${game.robotCorrect?'ok':'no'}">${game.robotCorrect?'✓':'✗'}</span></div>
+        </div>
+      </div>
+      <div class="truth-banner">It was actually a <b>${trueName}</b> ${item.emoji}</div>
+      <div class="btn-row"><button class="primary-btn" onclick="nextTestItem()">${game.testIdx+1 < game.testQueue.length ? 'Next →' : 'See results →'}</button></div>`;
+  }
+
+  return `
+    <div class="card">
+      <div class="eyebrow">Step 2 · Testing the robot</div>
+      <div class="item-progress">QUESTION ${game.testIdx+1} OF ${game.testQueue.length}</div>
+      <div class="item-display"><span class="item-emoji">${item.emoji}</span></div>
+      ${body}
+    </div>`;
+}
+
+function nameFor(ds, labelId){
+  return ds.labelA.id === labelId ? ds.labelA.name : ds.labelB.name;
+}
+function otherLabel(ds, labelId){
+  return ds.labelA.id === labelId ? ds.labelB.id : ds.labelA.id;
+}
+
+function studentGuess(labelId){
+  game.studentGuessId = labelId;
+  game.testSub = 'thinking';
+  render();
+  setTimeout(()=>{
+    const ds = game.dataset;
+    const item = game.pendingTestItem;
+    const other = otherLabel(ds, item.label);
+    const result = robotPredict(item.label, other);
+    game.robotGuessId = result.guess;
+    game.robotConfidence = result.confidence;
+    game.robotCorrect = result.correct;
+
+    if(item.label === game.studentGuessId) game.studentScore++;
+    if(result.correct) game.robotScore++;
+
+    game.testResults.push({
+      item, studentGuessId: game.studentGuessId, robotGuessId: result.guess,
+      studentCorrect: item.label === game.studentGuessId, robotCorrect: result.correct
+    });
+
+    game.testSub = 'reveal';
+    render();
+  }, 850);
+}
+
+function nextTestItem(){
+  game.testIdx++;
+  if(game.testIdx >= game.testQueue.length){
+    game.phase = 'results';
+  } else {
+    game.pendingTestItem = game.testQueue[game.testIdx];
+    game.testSub = 'guess';
+  }
+  render();
+}
+
+/* ---------------- RESULTS ---------------- */
+function renderResults(){
+  const ds = game.dataset;
+  const total = game.testQueue.length;
+  const robotPct = Math.round((game.robotScore/total)*100);
+  const studentPct = Math.round((game.studentScore/total)*100);
+  const a = game.stats[ds.labelA.id], b = game.stats[ds.labelB.id];
+
+  let verdict;
+  if(robotPct >= 85){
+    verdict = `<b>Excellent training!</b> Your robot generalized really well to pictures it had never seen — that's a sign of clean, balanced, correctly labeled training data.`;
+  } else if(robotPct >= 60){
+    verdict = `<b>Decent result.</b> The robot learned something useful, but a few more clearly labeled examples (especially of whichever category it missed most) would sharpen it.`;
+  } else {
+    const imbalanced = Math.abs((a.correct+a.wrong) - (b.correct+b.wrong)) >= 3;
+    const noisy = (a.wrong + b.wrong) >= 2;
+    let reason = "It just needs more training data overall.";
+    if(noisy) reason = "Some examples were mislabeled during training, which taught it the wrong pattern.";
+    else if(imbalanced) reason = `It saw a lot more ${ (a.correct+a.wrong) > (b.correct+b.wrong) ? ds.labelA.name.toLowerCase() : ds.labelB.name.toLowerCase() } examples than the other category, so it got biased.`;
+    verdict = `<b>Your robot is confused!</b> ${reason} In real machine learning this is called "garbage in, garbage out."`;
+  }
+
+  return `
+    <div class="card">
+      <div class="eyebrow">Step 3 · Results</div>
+      <h1 class="title">Here's how your robot did</h1>
+
+      <div class="score-grid">
+        <div class="score-box robot">
+          <div class="score-who">Robot accuracy</div>
+          <div class="score-num">${robotPct}%</div>
+          <div class="score-sub">${game.robotScore} / ${total} correct</div>
+        </div>
+        <div class="score-box student">
+          <div class="score-who">Your accuracy</div>
+          <div class="score-num">${studentPct}%</div>
+          <div class="score-sub">${game.studentScore} / ${total} correct</div>
+        </div>
+      </div>
+
+      <div class="verdict">${verdict}</div>
+
+      <div class="balance-row">
+        <span class="balance-pill">${ds.labelA.emoji} ${ds.labelA.name}: ${a.correct} correct / ${a.wrong} mislabeled</span>
+        <span class="balance-pill">${ds.labelB.emoji} ${ds.labelB.name}: ${b.correct} correct / ${b.wrong} mislabeled</span>
+      </div>
+
+      <div class="btn-row">
+        <button class="primary-btn" onclick="trainMore()">🧠 Train more &amp; retest</button>
+        <button class="secondary-btn" onclick="renderIntroPhase()">🔄 Try a new dataset</button>
+      </div>
+    </div>`;
+}
+
+function trainMore(){
+  const ds = game.dataset;
+  game.trainQueue = shuffle(ds.train.slice());
+  game.trainIdx = 0;
+  game.phase = 'train';
+  pickTrainItem();
+  render();
+}
+
+function renderIntroPhase(){
+  game = null;
+  render();
+}
+
+/* ---------------- boot ---------------- */
+render();
+</script>
+<script>
+(function(){
+  var lastH=0;
+  function sendHeight(){
+    try{
+      var d=document, b=d.body, e=d.documentElement;
+      var h=Math.max(
+        b?b.scrollHeight:0, b?b.offsetHeight:0,
+        e?e.scrollHeight:0, e?e.offsetHeight:0, e?e.clientHeight:0
+      );
+      if(h && Math.abs(h-lastH)>1){
+        lastH=h;
+        parent.postMessage({gcGameHeight:h}, '*');
+      }
+    }catch(err){}
+  }
+  window.addEventListener('load', sendHeight);
+  window.addEventListener('resize', sendHeight);
+  document.addEventListener('DOMContentLoaded', sendHeight);
+  if(window.ResizeObserver){
+    try{ new ResizeObserver(sendHeight).observe(document.documentElement); }catch(err){}
+  }
+  if(window.MutationObserver){
+    try{
+      new MutationObserver(sendHeight).observe(document.documentElement, {childList:true, subtree:true, attributes:true});
+    }catch(err){}
+  }
+  for(var i=1;i<=20;i++){ setTimeout(sendHeight, i*150); }
+  setInterval(sendHeight, 600);
+})();
+</script>
+
+</body>
+</html>

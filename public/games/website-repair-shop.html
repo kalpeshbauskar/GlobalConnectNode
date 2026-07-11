@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Website Repair Shop</title>
+
+<style>
+
+*{
+box-sizing:border-box;
+}
+
+body{
+margin:0;
+background:#0f172a;
+font-family:'Segoe UI',sans-serif;
+color:white;
+display:flex;
+flex-direction:column;
+align-items:center;
+
+padding-bottom:30px;
+}
+
+
+h1{
+color:#38bdf8;
+text-align:center;
+margin:20px 10px 10px;
+}
+
+
+#top{
+width:90%;
+max-width:1200px;
+background:#1e293b;
+padding:15px;
+border-radius:15px;
+display:flex;
+justify-content:space-between;
+font-size:20px;
+}
+
+
+#container{
+width:90%;
+max-width:1200px;
+display:flex;
+gap:20px;
+margin-top:20px;
+flex-wrap:wrap;
+}
+
+
+.box{
+flex:1;
+min-width:280px;
+background:#1e293b;
+padding:20px;
+border-radius:15px;
+}
+
+
+.customer{
+background:#ef4444;
+padding:15px;
+border-radius:10px;
+line-height:1.5;
+}
+
+
+textarea{
+
+width:100%;
+height:280px;
+margin-top:15px;
+
+background:#020617;
+color:#22d3ee;
+
+font-family:monospace;
+font-size:16px;
+
+padding:15px;
+border-radius:10px;
+border:2px solid #334155;
+resize:vertical;
+
+}
+
+textarea:focus-visible,
+button:focus-visible{
+outline:3px solid #facc15;
+outline-offset:2px;
+}
+
+
+button{
+
+padding:12px 18px;
+border:none;
+border-radius:10px;
+margin:10px 5px 0 0;
+
+font-weight:bold;
+cursor:pointer;
+color:#0f172a;
+transition:transform 0.15s ease, opacity 0.15s ease;
+
+}
+
+button:hover{
+transform:translateY(-1px);
+opacity:0.9;
+}
+
+
+.fix{
+background:#22c55e;
+}
+
+button:disabled{
+opacity:0.5;
+cursor:not-allowed;
+transform:none;
+}
+
+
+.reset{
+background:#64748b;
+color:white;
+}
+
+.skip{
+background:#f97316;
+}
+
+
+.next{
+background:#38bdf8;
+display:none;
+}
+
+
+
+.preview{
+
+background:white;
+color:black;
+
+height:320px;
+
+padding:20px;
+border-radius:10px;
+
+overflow:auto;
+
+}
+
+
+
+.hint{
+
+display:none;
+
+background:#facc15;
+color:black;
+
+padding:12px;
+border-radius:10px;
+
+margin-top:10px;
+
+}
+
+
+
+#result{
+
+font-size:20px;
+min-height:26px;
+
+}
+
+.progress-wrap{
+width:90%;
+max-width:1200px;
+margin-top:10px;
+background:#1e293b;
+border-radius:10px;
+overflow:hidden;
+height:12px;
+}
+
+#progress-bar{
+height:100%;
+background:#22c55e;
+width:0%;
+transition:width 0.3s ease;
+}
+
+@media (max-width: 700px){
+#container{
+flex-direction:column;
+}
+#top{
+font-size:16px;
+}
+}
+
+@media (prefers-reduced-motion: reduce){
+*{
+transition:none !important;
+animation:none !important;
+}
+button:hover{
+transform:none;
+}
+}
+
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<h1>🛠️ Website Repair Shop</h1>
+
+
+
+<div id="top">
+
+<div>
+Level:
+<span id="level">1</span>/10
+</div>
+
+
+<div>
+⭐ Score:
+<span id="score">0</span>
+</div>
+
+
+</div>
+
+<div class="progress-wrap" aria-hidden="true">
+<div id="progress-bar"></div>
+</div>
+
+
+
+
+
+<div id="container">
+
+
+
+<div class="box">
+
+
+<div id="customer" class="customer"></div>
+
+
+<div id="hint" class="hint" role="status" aria-live="polite"></div>
+
+
+<label for="code" style="position:absolute;left:-9999px;">Website code editor</label>
+<textarea id="code"
+aria-label="Website code editor"
+oninput="updatePreview()"
+spellcheck="false"></textarea>
+
+
+
+<br>
+
+
+<button class="fix" id="fixBtn" onclick="checkCode()">
+🔧 Repair Website
+</button>
+
+
+<button class="reset" onclick="resetCode()">
+↩ Reset
+</button>
+
+<button class="skip" id="skip" onclick="skipLevel()">
+⏭ Skip
+</button>
+
+
+<button id="next"
+class="next"
+onclick="nextLevel()">
+➡ Next Customer
+</button>
+
+
+
+<p id="result" role="status" aria-live="polite"></p>
+
+
+</div>
+
+
+
+<div class="box">
+
+
+<h2>🌐 Website Preview</h2>
+
+
+<div id="preview" class="preview" role="region" aria-label="Live website preview"></div>
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+
+<script>
+
+/*
+Each level has:
+  problem - the customer's request text
+  code    - the broken starter code shown in the editor (must match what the problem describes)
+  hint    - shown after a failed attempt
+  check(text) - returns true if the current code correctly satisfies the request
+*/
+
+const levels=[
+
+
+{
+problem:
+"My bakery website is showing the wrong business name (Old Bakery). Change it to Sweet Cake Shop.",
+
+code:
+"<h1>Welcome to Old Bakery</h1>",
+
+hint:
+"Change the text inside the h1 tag to say Sweet Cake Shop, and remove the old name.",
+
+check:function(text){
+return /sweet\s*cake\s*shop/i.test(text) && !/old\s*bakery/i.test(text);
+}
+
+},
+
+
+
+{
+problem:
+"My website heading color does not match my design. The heading is currently black — change it to red.",
+
+code:
+"<h1 style='color:black;'>AI Learning Center</h1>",
+
+hint:
+"Find the CSS color property and change black to red (color:red).",
+
+check:function(text){
+return /color\s*:\s*red/i.test(text) && !/color\s*:\s*black/i.test(text);
+}
+
+},
+
+
+
+{
+problem:
+"My website heading is broken because the HTML opening tag is missing its closing '>' symbol. Fix it so the heading displays properly.",
+
+code:
+"<h1 Welcome To My Website</h1>",
+
+hint:
+"Opening tags need a > symbol right after the tag name, like this: <h1>Welcome To My Website</h1>",
+
+check:function(text){
+return /<h1>\s*Welcome\s*To\s*My\s*Website\s*<\/h1>/i.test(text);
+}
+
+},
+
+
+
+{
+problem:
+"Students cannot read this paragraph because the text is only 8px. Increase the text size so it's easy to read (at least 16px).",
+
+code:
+"<p style='font-size:8px;'>Learn HTML Coding</p>",
+
+hint:
+"Change font-size:8px to a bigger value, such as font-size:24px.",
+
+check:function(text){
+let match=text.match(/font-size\s*:\s*(\d+)px/i);
+if(!match) return false;
+return parseInt(match[1],10)>=16;
+}
+
+},
+
+
+
+{
+problem:
+"My heading color is not working because the CSS property 'cullor' has a spelling mistake. Fix the property name.",
+
+code:
+"<h2 style='cullor:red;'>Website Error</h2>",
+
+hint:
+"Correct the CSS property name from 'cullor' to 'color'.",
+
+check:function(text){
+return /color\s*:\s*red/i.test(text) && !/cullor/i.test(text);
+}
+
+},
+
+
+
+{
+problem:
+"My blog contains an unwanted extra heading that says 'Remove This'. Delete that whole heading.",
+
+code:
+"<h1>My Blog</h1>\n<h2>Remove This</h2>",
+
+hint:
+"Delete the entire second line, including the h2 tags.",
+
+check:function(text){
+return !/remove this/i.test(text) && !/<h2/i.test(text);
+}
+
+},
+
+
+
+{
+problem:
+"My button does not work because the HTML tag is misspelled ('buton'). Fix the tag so it says button correctly.",
+
+code:
+"<buton>Start Game</button>",
+
+hint:
+"Fix the opening tag's spelling: it should be <button> to match the closing </button>.",
+
+check:function(text){
+return /<button>/i.test(text) && /<\/button>/i.test(text) && !/<buton>/i.test(text);
+}
+
+},
+
+
+
+{
+problem:
+"Make the word IMPORTANT stand out by making it bold.",
+
+code:
+"<p>This is <span>IMPORTANT</span></p>",
+
+hint:
+"Wrap IMPORTANT in a bold tag, like <b>IMPORTANT</b> or <strong>IMPORTANT</strong>.",
+
+check:function(text){
+return /<b>\s*IMPORTANT\s*<\/b>/i.test(text) || /<strong>\s*IMPORTANT\s*<\/strong>/i.test(text);
+}
+
+},
+
+
+
+{
+problem:
+"The bus image is missing because the image tag has no image path (src). Add an image source so the picture can show.",
+
+code:
+"<img alt='Bus'>",
+
+hint:
+"Add a src attribute pointing to an image file, e.g. src='bus.png'.",
+
+isImageLevel:true,
+
+check:function(text){
+return /<img[^>]*src\s*=\s*['"][^'"]+\.(png|jpg|jpeg|gif|webp)['"][^>]*>/i.test(text);
+}
+
+},
+
+
+
+{
+problem:
+"The background color is not working due to a CSS spelling mistake ('backgrond-color'). Fix the property name.",
+
+code:
+"<div style='backgrond-color:blue;'>Welcome</div>",
+
+hint:
+"Correct the spelling: it should be background-color, not backgrond-color.",
+
+check:function(text){
+return /background-color\s*:\s*blue/i.test(text) && !/backgrond-color/i.test(text);
+}
+
+}
+
+];
+
+
+
+
+
+let current=0;
+
+let score=0;
+
+let levelSolved=false;
+
+const totalLevels=levels.length;
+
+
+/* A small self-contained bus illustration (SVG), embedded as a data URI
+   so the "missing image" level has a real picture to display offline —
+   no internet connection or external file needed. */
+
+const BUS_SVG=
+"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 150'>"+
+"<rect x='15' y='30' width='210' height='75' rx='12' fill='#fbbf24' stroke='#111827' stroke-width='4'/>"+
+"<rect x='15' y='30' width='28' height='75' rx='12' fill='#f59e0b' stroke='#111827' stroke-width='4'/>"+
+"<rect x='60' y='42' width='38' height='32' rx='5' fill='#7dd3fc' stroke='#111827' stroke-width='3'/>"+
+"<rect x='108' y='42' width='38' height='32' rx='5' fill='#7dd3fc' stroke='#111827' stroke-width='3'/>"+
+"<rect x='156' y='42' width='38' height='32' rx='5' fill='#7dd3fc' stroke='#111827' stroke-width='3'/>"+
+"<rect x='15' y='82' width='210' height='10' fill='#ef4444'/>"+
+"<circle cx='65' cy='112' r='17' fill='#111827'/>"+
+"<circle cx='65' cy='112' r='7' fill='#9ca3af'/>"+
+"<circle cx='175' cy='112' r='17' fill='#111827'/>"+
+"<circle cx='175' cy='112' r='7' fill='#9ca3af'/>"+
+"<text x='29' y='72' font-family='Segoe UI, sans-serif' font-size='14' fill='#111827' text-anchor='middle' transform='rotate(-90 29 72)'>BUS</text>"+
+"</svg>";
+
+const BUS_IMAGE_SRC="data:image/svg+xml;base64,"+btoa(BUS_SVG);
+
+
+
+function updateProgress(){
+let pct=Math.round((current/totalLevels)*100);
+document.getElementById("progress-bar").style.width=pct+"%";
+}
+
+
+
+function loadLevel(){
+
+
+document.getElementById("level").innerHTML=current+1;
+
+
+document.getElementById("customer").innerHTML=
+"👤 Customer Request:<br>"+levels[current].problem;
+
+
+
+document.getElementById("code").value=
+levels[current].code;
+
+
+
+document.getElementById("hint").style.display="none";
+document.getElementById("hint").innerHTML="";
+
+
+document.getElementById("next").style.display="none";
+
+
+document.getElementById("result").innerHTML="";
+
+document.getElementById("skip").style.display="inline-block";
+
+levelSolved=false;
+document.getElementById("fixBtn").disabled=false;
+
+
+updatePreview();
+
+updateProgress();
+
+document.getElementById("code").focus();
+
+
+}
+
+
+
+
+function updatePreview(){
+
+let code=
+document.getElementById("code").value;
+
+let renderedCode=code;
+
+
+/* On the "missing image" level, once the student adds a valid-looking
+   src attribute, swap it in the preview for a real embedded bus image
+   so they can actually see their fix working — even offline. */
+
+if(levels[current].isImageLevel){
+
+let hasValidSrc=
+/<img[^>]*src\s*=\s*['"][^'"]+\.(png|jpg|jpeg|gif|webp)['"][^>]*>/i.test(code);
+
+if(hasValidSrc){
+
+renderedCode=code.replace(
+/(<img[^>]*src\s*=\s*['"])[^'"]+(['"][^>]*>)/i,
+"$1"+BUS_IMAGE_SRC+"$2"
+);
+
+}
+
+}
+
+
+document.getElementById("preview").innerHTML=
+renderedCode;
+
+}
+
+
+
+
+function checkCode(){
+
+
+/* Guard against double-scoring: once a level is marked solved,
+   further clicks on Repair Website just re-show success without
+   adding another 10 points. This is what was causing totals like
+   180 instead of the correct 100 (10 levels x 10 points). */
+
+if(levelSolved){
+
+document.getElementById("result").innerHTML=
+"✅ Already repaired! Click Next Customer to continue.";
+
+return;
+
+}
+
+
+
+let text=
+document.getElementById("code").value;
+
+
+
+if(levels[current].check(text)){
+
+
+levelSolved=true;
+
+score+=10;
+
+
+document.getElementById("score").innerHTML=
+score;
+
+
+document.getElementById("result").innerHTML=
+"✅ Website Repaired Successfully!";
+
+
+document.getElementById("hint").style.display="none";
+
+
+document.getElementById("next").style.display=
+"inline-block";
+
+document.getElementById("skip").style.display="none";
+
+document.getElementById("fixBtn").disabled=true;
+
+
+}
+
+
+else{
+
+
+document.getElementById("result").innerHTML=
+"❌ Repair failed. Try again.";
+
+
+document.getElementById("hint").innerHTML=
+"💡 Hint: "+levels[current].hint;
+
+
+document.getElementById("hint").style.display=
+"block";
+
+
+}
+
+
+}
+
+
+
+
+function resetCode(){
+
+document.getElementById("code").value=
+levels[current].code;
+
+document.getElementById("hint").style.display="none";
+document.getElementById("result").innerHTML="";
+document.getElementById("next").style.display="none";
+document.getElementById("skip").style.display="inline-block";
+
+levelSolved=false;
+document.getElementById("fixBtn").disabled=false;
+
+updatePreview();
+
+}
+
+
+
+
+function skipLevel(){
+
+document.getElementById("result").innerHTML=
+"⏭ Skipped — no points earned for this one.";
+
+advanceLevel();
+
+}
+
+
+
+
+function nextLevel(){
+
+advanceLevel();
+
+}
+
+
+
+
+function advanceLevel(){
+
+
+current++;
+
+
+if(current<totalLevels){
+
+loadLevel();
+
+}
+
+else{
+
+updateProgress();
+
+document.getElementById("container").innerHTML=
+
+`
+<div class="box" style="text-align:center;">
+
+<h1>🏆 Website Repair Expert!</h1>
+
+<h2>
+Final Score: ${score}/${totalLevels*10}
+</h2>
+
+<p>
+You completed all customer website repairs.
+</p>
+
+<button class="fix" onclick="location.reload()">🔁 Play Again</button>
+
+</div>
+`;
+
+}
+
+
+}
+
+
+
+
+
+loadLevel();
+
+
+</script>
+
+
+<script>
+(function(){
+  var lastH=0;
+  function sendHeight(){
+    try{
+      var d=document, b=d.body, e=d.documentElement;
+      var h=Math.max(
+        b?b.scrollHeight:0, b?b.offsetHeight:0,
+        e?e.scrollHeight:0, e?e.offsetHeight:0, e?e.clientHeight:0
+      );
+      if(h && Math.abs(h-lastH)>1){
+        lastH=h;
+        parent.postMessage({gcGameHeight:h}, '*');
+      }
+    }catch(err){}
+  }
+  window.addEventListener('load', sendHeight);
+  window.addEventListener('resize', sendHeight);
+  document.addEventListener('DOMContentLoaded', sendHeight);
+  if(window.ResizeObserver){
+    try{ new ResizeObserver(sendHeight).observe(document.documentElement); }catch(err){}
+  }
+  if(window.MutationObserver){
+    try{
+      new MutationObserver(sendHeight).observe(document.documentElement, {childList:true, subtree:true, attributes:true});
+    }catch(err){}
+  }
+  for(var i=1;i<=20;i++){ setTimeout(sendHeight, i*150); }
+  setInterval(sendHeight, 600);
+})();
+</script>
+
+</body>
+</html>

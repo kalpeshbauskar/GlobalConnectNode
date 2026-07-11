@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>Pixel Code Lab: Binary &amp; RGB Explorer</title>
+<style>
+  :root{
+    --bg: #0b1220;
+    --panel: #121b30;
+    --panel-2: #17233f;
+    --border: #2a3a5c;
+    --text: #e8edf9;
+    --text-dim: #9fb0d0;
+    --cyan: #35e4d8;
+    --magenta: #ff5ec4;
+    --yellow: #ffd53d;
+    --green: #4ade80;
+    --red: #ff6767;
+    --pixel-on: #eef2ff;
+    --pixel-off: #1a2440;
+    --focus: #ffd53d;
+    --radius: 10px;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    background: radial-gradient(1200px 600px at 20% -10%, #182644 0%, var(--bg) 60%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    padding: 16px;
+  }
+
+  h1,h2,h3{ margin: 0 0 8px; }
+
+  header.top{
+    text-align:center;
+    max-width: 900px;
+    margin: 0 auto 20px;
+  }
+  header.top h1{
+    font-size: clamp(1.4rem, 4vw, 2.1rem);
+    background: linear-gradient(90deg, var(--cyan), var(--magenta), var(--yellow));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: 0.5px;
+  }
+  header.top p{ color: var(--text-dim); margin: 4px 0 0; }
+
+  .scoreboard{
+    max-width: 900px;
+    margin: 0 auto 20px;
+    display:flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items:center;
+    justify-content: space-between;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+  }
+  .scoreboard .score-block{ display:flex; gap:16px; flex-wrap:wrap; }
+  .score-item{ font-size: 0.95rem; color: var(--text-dim); }
+  .score-item strong{ color: var(--text); font-size: 1.1rem; }
+  .rank-badge{
+    background: linear-gradient(90deg, var(--cyan), var(--magenta));
+    color: #08101f;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  nav.tabs{
+    max-width: 900px;
+    margin: 0 auto 18px;
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  nav.tabs button{
+    flex:1;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    padding: 12px 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    border-radius: 6px 6px 0 0;
+  }
+  nav.tabs button[aria-selected="true"]{
+    color: var(--text);
+    border-bottom-color: var(--cyan);
+    background: var(--panel);
+  }
+  nav.tabs button:hover{ color: var(--text); }
+
+  main{ max-width: 900px; margin: 0 auto; }
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+  .panel h2{ font-size: 1.2rem; }
+  .panel h2 .icon{ margin-right: 6px; }
+
+  details.explain{
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    margin-bottom: 16px;
+  }
+  details.explain summary{
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--cyan);
+  }
+  details.explain p{ color: var(--text-dim); margin: 10px 0 0; }
+  details.explain code{
+    background: #0c1526;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--yellow);
+  }
+
+  /* ---------- Binary grids ---------- */
+  .grids-row{
+    display:flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 14px 0;
+  }
+  .grid-col{ text-align:center; }
+  .grid-col h3{ font-size: 0.95rem; color: var(--text-dim); font-weight: 600; }
+  .bgrid{
+    display: grid;
+    grid-template-columns: repeat(6, minmax(30px, 40px));
+    grid-template-rows: repeat(6, minmax(30px, 40px));
+    gap: 3px;
+    background: #0c1526;
+    padding: 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .bcell{
+    width: 100%;
+    aspect-ratio: 1/1;
+    background: var(--pixel-off);
+    border: 1px solid #26345a;
+    border-radius: 3px;
+    cursor: pointer;
+    padding: 0;
+  }
+  .bcell[aria-pressed="true"]{ background: var(--pixel-on); }
+  .bcell.locked{ cursor: default; }
+  .bcell.correct{ outline: 2px solid var(--green); outline-offset: -2px; }
+  .bcell.incorrect{ outline: 2px solid var(--red); outline-offset: -2px; }
+
+  .binary-output{
+    font-family: "Courier New", Courier, monospace;
+    background: #0c1526;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-top: 10px;
+    color: var(--cyan);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    word-break: break-all;
+    min-height: 1.6em;
+  }
+
+  .controls-row{
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 12px;
+  }
+
+  button.action{
+    background: linear-gradient(90deg, var(--cyan), #2bb8ae);
+    color: #08101f;
+    border: none;
+    font-weight: 700;
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+  }
+  button.action.secondary{
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  button.action:focus-visible,
+  .bcell:focus-visible,
+  .pcell:focus-visible,
+  nav.tabs button:focus-visible,
+  input[type="range"]:focus-visible{
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+  button.action:hover{ filter: brightness(1.08); }
+
+  .feedback{
+    margin-top: 12px;
+    text-align:center;
+    font-weight: 600;
+    min-height: 1.4em;
+  }
+  .feedback.good{ color: var(--green); }
+  .feedback.bad{ color: var(--red); }
+  .feedback.info{ color: var(--yellow); }
+
+  /* ---------- RGB tab ---------- */
+  .rgb-layout{
+    display:flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    align-items:flex-start;
+    justify-content: center;
+  }
+  .sliders{ flex: 1 1 260px; min-width: 240px; }
+  .slider-row{ margin-bottom: 14px; }
+  .slider-row label{
+    display:flex;
+    justify-content: space-between;
+    font-weight: 600;
+    margin-bottom: 4px;
+    font-size: 0.9rem;
+  }
+  .slider-row.r label{ color: #ff8a8a; }
+  .slider-row.g label{ color: #7dff9c; }
+  .slider-row.b label{ color: #8ab4ff; }
+  input[type="range"]{ width: 100%; }
+
+  .swatch-block{ flex: 0 0 auto; text-align:center; }
+  .swatch{
+    width: 140px;
+    height: 140px;
+    border-radius: 12px;
+    border: 2px solid var(--border);
+    margin: 0 auto 10px;
+  }
+  .code-output{
+    font-family: "Courier New", Courier, monospace;
+    background: #0c1526;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--yellow);
+    font-size: 0.95rem;
+  }
+
+  .target-compare{
+    display:flex;
+    gap: 20px;
+    justify-content:center;
+    align-items:center;
+    flex-wrap: wrap;
+    margin: 10px 0;
+  }
+  .target-compare .swatch{ width: 100px; height: 100px; }
+  .target-compare .label{ font-size: 0.85rem; color: var(--text-dim); margin-top: 6px; }
+
+  .pgrid{
+    display:grid;
+    grid-template-columns: repeat(5, minmax(30px, 44px));
+    grid-template-rows: repeat(5, minmax(30px, 44px));
+    gap: 3px;
+    background: #0c1526;
+    padding: 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    margin: 14px auto 0;
+    width: fit-content;
+  }
+  .pcell{
+    width: 100%;
+    aspect-ratio: 1/1;
+    background: #1a2440;
+    border: 1px solid #26345a;
+    border-radius: 3px;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .sr-only{
+    position:absolute; width:1px; height:1px;
+    padding:0; margin:-1px; overflow:hidden;
+    clip: rect(0,0,0,0); white-space:nowrap; border:0;
+  }
+
+  footer{
+    max-width: 900px;
+    margin: 20px auto 0;
+    text-align:center;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition: none !important; animation: none !important; }
+  }
+
+  @media (max-width: 480px){
+    .bgrid{ grid-template-columns: repeat(6, minmax(24px, 1fr)); }
+    .pgrid{ grid-template-columns: repeat(5, minmax(28px, 1fr)); width: 100%; }
+    .grids-row{ gap: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>Pixel Code Lab</h1>
+  <p>How computers store pictures using 0s, 1s, and RGB numbers</p>
+</header>
+
+<div class="scoreboard">
+  <div class="score-block">
+    <div class="score-item">Score: <strong id="scoreValue">0</strong></div>
+    <div class="score-item">Challenges won: <strong id="winsValue">0</strong></div>
+  </div>
+  <div class="rank-badge" id="rankBadge">Pixel Novice</div>
+</div>
+
+<div id="liveRegion" class="sr-only" aria-live="polite" role="status"></div>
+
+<nav class="tabs" role="tablist" aria-label="Activity sections">
+  <button role="tab" id="tabBinaryBtn" aria-selected="true" aria-controls="binaryPanel">🔲 Binary Pixels (0/1)</button>
+  <button role="tab" id="tabRgbBtn" aria-selected="false" aria-controls="rgbPanel">🎨 RGB Color Code</button>
+</nav>
+
+<main>
+  <!-- ===================== BINARY TAB ===================== -->
+  <section id="binaryPanel" role="tabpanel" aria-labelledby="tabBinaryBtn">
+
+    <details class="explain" open>
+      <summary>What's going on here?</summary>
+      <p>
+        Black-and-white pictures on a computer are just grids of tiny squares called <strong>pixels</strong>.
+        Each pixel is either "off" (light) or "on" (dark). Computers only understand two symbols,
+        <code>0</code> and <code>1</code>, so a whole picture can be written as one long string of binary digits &mdash;
+        one <code>0</code> or <code>1</code> per pixel, row by row. This is called a <strong>bitmap</strong>.
+      </p>
+    </details>
+
+    <div class="panel">
+      <h2><span class="icon">🖌️</span>Free Draw</h2>
+      <p style="color:var(--text-dim); margin-top:-4px;">Click squares to turn pixels on and off. Watch the binary code update below.</p>
+      <div class="grids-row">
+        <div class="grid-col">
+          <h3>Your pixel grid</h3>
+          <div class="bgrid" id="freeGrid" role="group" aria-label="6 by 6 free draw pixel grid"></div>
+        </div>
+      </div>
+      <div class="binary-output" id="freeOutput" aria-live="polite">000000
+000000
+000000
+000000
+000000
+000000</div>
+      <div class="controls-row">
+        <button class="action secondary" id="clearFreeBtn" type="button">Clear grid</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="icon">🎯</span>Decode Challenge</h2>
+      <p style="color:var(--text-dim); margin-top:-4px;">
+        Recreate the target pattern on the right by toggling squares on the left. Click "Check My Work" when ready.
+      </p>
+      <div class="grids-row">
+        <div class="grid-col">
+          <h3>Your grid</h3>
+          <div class="bgrid" id="challengeGrid" role="group" aria-label="6 by 6 challenge pixel grid, editable"></div>
+        </div>
+        <div class="grid-col">
+          <h3>Target pattern</h3>
+          <div class="bgrid" id="targetGrid" role="group" aria-label="6 by 6 target pixel pattern, locked"></div>
+        </div>
+      </div>
+      <div class="binary-output" id="challengeOutput" aria-live="off">000000
+000000
+000000
+000000
+000000
+000000</div>
+      <div class="feedback" id="binaryFeedback" role="status" aria-live="polite"></div>
+      <div class="controls-row">
+        <button class="action" id="checkBinaryBtn" type="button">Check My Work</button>
+        <button class="action secondary" id="newBinaryBtn" type="button">New Challenge</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== RGB TAB ===================== -->
+  <section id="rgbPanel" role="tabpanel" aria-labelledby="tabRgbBtn" hidden>
+
+    <details class="explain" open>
+      <summary>What's going on here?</summary>
+      <p>
+        Color pictures work the same way, but each pixel needs three numbers instead of one bit.
+        Every pixel is made of three tiny lights: <strong>Red</strong>, <strong>Green</strong>, and <strong>Blue</strong>.
+        Each light can shine at a brightness from <code>0</code> (off) to <code>255</code> (full power).
+        Mixing the three brightnesses makes every color your screen can show &mdash; that's an
+        <strong>RGB code</strong>, like <code>rgb(255, 0, 0)</code> for pure red.
+      </p>
+    </details>
+
+    <div class="panel">
+      <h2><span class="icon">🎛️</span>Color Mixer</h2>
+      <div class="rgb-layout">
+        <div class="sliders">
+          <div class="slider-row r">
+            <label for="rSlider"><span>Red</span><span id="rVal">128</span></label>
+            <input type="range" id="rSlider" min="0" max="255" value="128" aria-describedby="mixerSwatchDesc">
+          </div>
+          <div class="slider-row g">
+            <label for="gSlider"><span>Green</span><span id="gVal">128</span></label>
+            <input type="range" id="gSlider" min="0" max="255" value="128" aria-describedby="mixerSwatchDesc">
+          </div>
+          <div class="slider-row b">
+            <label for="bSlider"><span>Blue</span><span id="bVal">128</span></label>
+            <input type="range" id="bSlider" min="0" max="255" value="128" aria-describedby="mixerSwatchDesc">
+          </div>
+        </div>
+        <div class="swatch-block">
+          <div class="swatch" id="mixerSwatch"></div>
+          <div class="code-output" id="mixerCode">rgb(128, 128, 128)</div>
+          <div class="code-output" id="mixerHex" style="margin-top:6px;">#808080</div>
+          <p id="mixerSwatchDesc" class="sr-only">Live preview of the mixed color</p>
+        </div>
+      </div>
+
+      <h3 style="margin-top:20px;">Paint a 5×5 pixel picture</h3>
+      <p style="color:var(--text-dim); margin-top:-4px;">Click a square to paint it with your current mixed color.</p>
+      <div class="pgrid" id="paintGrid" role="group" aria-label="5 by 5 pixel art canvas"></div>
+      <div class="controls-row">
+        <button class="action secondary" id="clearPaintBtn" type="button">Clear canvas</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="icon">🎯</span>Color Match Challenge</h2>
+      <p style="color:var(--text-dim); margin-top:-4px;">
+        Use the sliders above to mix a color that matches the target swatch, then submit your guess.
+      </p>
+      <div class="target-compare">
+        <div class="grid-col">
+          <div class="swatch" id="targetSwatch"></div>
+          <div class="label">Target color</div>
+        </div>
+        <div class="grid-col">
+          <div class="swatch" id="guessSwatch"></div>
+          <div class="label">Your current mix</div>
+        </div>
+      </div>
+      <div class="feedback" id="rgbFeedback" role="status" aria-live="polite"></div>
+      <div class="controls-row">
+        <button class="action" id="submitGuessBtn" type="button">Submit Guess</button>
+        <button class="action secondary" id="newColorBtn" type="button">New Color</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>Pixel Code Lab &middot; A HII AI Literacy Activity</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- Shared state ---------------- */
+  var score = 0;
+  var wins = 0;
+  var liveRegion = document.getElementById('liveRegion');
+
+  function announce(msg){
+    liveRegion.textContent = '';
+    window.setTimeout(function(){ liveRegion.textContent = msg; }, 30);
+  }
+
+  function updateScoreboard(){
+    document.getElementById('scoreValue').textContent = String(score);
+    document.getElementById('winsValue').textContent = String(wins);
+    var rank = 'Pixel Novice';
+    if(score >= 250){ rank = 'Pixel Master'; }
+    else if(score >= 150){ rank = 'RGB Engineer'; }
+    else if(score >= 60){ rank = 'Binary Apprentice'; }
+    document.getElementById('rankBadge').textContent = rank;
+  }
+  updateScoreboard();
+
+  function addScore(points, wasWin){
+    score += points;
+    if(score < 0){ score = 0; }
+    if(wasWin){ wins += 1; }
+    updateScoreboard();
+  }
+
+  /* ---------------- Tabs ---------------- */
+  var tabBinaryBtn = document.getElementById('tabBinaryBtn');
+  var tabRgbBtn = document.getElementById('tabRgbBtn');
+  var binaryPanel = document.getElementById('binaryPanel');
+  var rgbPanel = document.getElementById('rgbPanel');
+
+  function activateTab(which){
+    var binaryActive = which === 'binary';
+    tabBinaryBtn.setAttribute('aria-selected', binaryActive ? 'true' : 'false');
+    tabRgbBtn.setAttribute('aria-selected', binaryActive ? 'false' : 'true');
+    binaryPanel.hidden = !binaryActive;
+    rgbPanel.hidden = binaryActive;
+  }
+  tabBinaryBtn.addEventListener('click', function(){ activateTab('binary'); });
+  tabRgbBtn.addEventListener('click', function(){ activateTab('rgb'); });
+
+  tabBinaryBtn.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowRight'){ tabRgbBtn.focus(); activateTab('rgb'); }
+  });
+  tabRgbBtn.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowLeft'){ tabBinaryBtn.focus(); activateTab('binary'); }
+  });
+
+  /* ---------------- Binary grid helpers ---------------- */
+  var GRID_SIZE = 6;
+
+  function buildGrid(container, size, locked, onToggle){
+    container.innerHTML = '';
+    var cells = [];
+    for(var r = 0; r < size; r++){
+      var row = [];
+      for(var c = 0; c < size; c++){
+        var cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'bcell' + (locked ? ' locked' : '');
+        cell.setAttribute('aria-pressed', 'false');
+        cell.setAttribute('aria-label', 'Row ' + (r+1) + ', column ' + (c+1) + ', off');
+        cell.dataset.row = String(r);
+        cell.dataset.col = String(c);
+        if(!locked){
+          cell.addEventListener('click', function(){
+            var isOn = this.getAttribute('aria-pressed') === 'true';
+            setCellState(this, !isOn);
+            if(onToggle){ onToggle(); }
+          });
+        } else {
+          cell.tabIndex = -1;
+        }
+        container.appendChild(cell);
+        row.push(cell);
+      }
+      cells.push(row);
+    }
+    return cells;
+  }
+
+  function setCellState(cell, on){
+    cell.setAttribute('aria-pressed', on ? 'true' : 'false');
+    var r = parseInt(cell.dataset.row, 10) + 1;
+    var c = parseInt(cell.dataset.col, 10) + 1;
+    cell.setAttribute('aria-label', 'Row ' + r + ', column ' + c + ', ' + (on ? 'on' : 'off'));
+  }
+
+  function gridToBinaryString(cells){
+    var lines = [];
+    for(var r = 0; r < cells.length; r++){
+      var line = '';
+      for(var c = 0; c < cells[r].length; c++){
+        line += cells[r][c].getAttribute('aria-pressed') === 'true' ? '1' : '0';
+      }
+      lines.push(line);
+    }
+    return lines.join('\n');
+  }
+
+  function clearGrid(cells){
+    for(var r = 0; r < cells.length; r++){
+      for(var c = 0; c < cells[r].length; c++){
+        setCellState(cells[r][c], false);
+        cells[r][c].classList.remove('correct', 'incorrect');
+      }
+    }
+  }
+
+  function applyPattern(cells, pattern){
+    for(var r = 0; r < pattern.length; r++){
+      for(var c = 0; c < pattern[r].length; c++){
+        setCellState(cells[r][c], pattern[r][c] === 1);
+      }
+    }
+  }
+
+  /* ---------------- Free draw grid ---------------- */
+  var freeOutput = document.getElementById('freeOutput');
+  var freeCells = buildGrid(document.getElementById('freeGrid'), GRID_SIZE, false, function(){
+    freeOutput.textContent = gridToBinaryString(freeCells);
+  });
+  freeOutput.textContent = gridToBinaryString(freeCells);
+
+  document.getElementById('clearFreeBtn').addEventListener('click', function(){
+    clearGrid(freeCells);
+    freeOutput.textContent = gridToBinaryString(freeCells);
+    announce('Grid cleared.');
+  });
+
+  /* ---------------- Binary challenge ---------------- */
+  var PATTERNS = [
+    { name: 'heart', grid: [
+      [0,1,1,0,1,1],
+      [1,1,1,1,1,1],
+      [1,1,1,1,1,1],
+      [0,1,1,1,1,0],
+      [0,0,1,1,0,0],
+      [0,0,0,0,0,0]
+    ]},
+    { name: 'smiley', grid: [
+      [0,1,1,1,1,0],
+      [1,0,1,1,0,1],
+      [1,1,1,1,1,1],
+      [1,0,1,1,0,1],
+      [1,1,0,0,1,1],
+      [0,1,1,1,1,0]
+    ]},
+    { name: 'arrow', grid: [
+      [0,0,1,1,0,0],
+      [0,1,1,1,1,0],
+      [1,1,1,1,1,1],
+      [0,0,1,1,0,0],
+      [0,0,1,1,0,0],
+      [0,0,1,1,0,0]
+    ]},
+    { name: 'star', grid: [
+      [0,0,1,1,0,0],
+      [0,0,1,1,0,0],
+      [1,1,1,1,1,1],
+      [0,1,1,1,1,0],
+      [1,1,0,0,1,1],
+      [1,0,0,0,0,1]
+    ]},
+    { name: 'letter A', grid: [
+      [0,0,1,1,0,0],
+      [0,1,0,0,1,0],
+      [1,0,0,0,0,1],
+      [1,1,1,1,1,1],
+      [1,0,0,0,0,1],
+      [1,0,0,0,0,1]
+    ]},
+    { name: 'check mark', grid: [
+      [0,0,0,0,0,1],
+      [0,0,0,0,1,0],
+      [1,0,0,1,0,0],
+      [1,1,1,0,0,0],
+      [0,1,0,0,0,0],
+      [0,0,0,0,0,0]
+    ]}
+  ];
+
+  var challengeOutput = document.getElementById('challengeOutput');
+  var binaryFeedback = document.getElementById('binaryFeedback');
+  var lastPatternIndex = -1;
+  var currentPattern = null;
+
+  var challengeCells = buildGrid(document.getElementById('challengeGrid'), GRID_SIZE, false, function(){
+    challengeOutput.textContent = gridToBinaryString(challengeCells);
+  });
+  var targetCells = buildGrid(document.getElementById('targetGrid'), GRID_SIZE, true, null);
+
+  function pickNewPattern(){
+    var idx;
+    do {
+      idx = Math.floor(Math.random() * PATTERNS.length);
+    } while(idx === lastPatternIndex && PATTERNS.length > 1);
+    lastPatternIndex = idx;
+    currentPattern = PATTERNS[idx];
+    applyPattern(targetCells, currentPattern.grid);
+    clearGrid(challengeCells);
+    challengeOutput.textContent = gridToBinaryString(challengeCells);
+    binaryFeedback.textContent = '';
+    binaryFeedback.className = 'feedback';
+    announce('New challenge loaded.');
+  }
+
+  function checkBinaryChallenge(){
+    var total = GRID_SIZE * GRID_SIZE;
+    var correct = 0;
+    for(var r = 0; r < GRID_SIZE; r++){
+      for(var c = 0; c < GRID_SIZE; c++){
+        var userOn = challengeCells[r][c].getAttribute('aria-pressed') === 'true';
+        var targetOn = currentPattern.grid[r][c] === 1;
+        challengeCells[r][c].classList.remove('correct', 'incorrect');
+        if(userOn === targetOn){
+          correct++;
+          challengeCells[r][c].classList.add('correct');
+        } else {
+          challengeCells[r][c].classList.add('incorrect');
+        }
+      }
+    }
+    var pct = Math.round((correct / total) * 100);
+    if(pct === 100){
+      binaryFeedback.textContent = 'Perfect match! It was a ' + currentPattern.name + '. +20 points';
+      binaryFeedback.className = 'feedback good';
+      addScore(20, true);
+      announce('Perfect match. 20 points earned.');
+    } else if(pct >= 75){
+      binaryFeedback.textContent = 'Close! ' + correct + ' of ' + total + ' pixels correct. +10 points';
+      binaryFeedback.className = 'feedback info';
+      addScore(10, false);
+      announce('Good attempt. ' + correct + ' of ' + total + ' pixels correct.');
+    } else {
+      binaryFeedback.textContent = correct + ' of ' + total + ' pixels correct. Keep trying, or click New Challenge.';
+      binaryFeedback.className = 'feedback bad';
+      announce(correct + ' of ' + total + ' pixels correct.');
+    }
+  }
+
+  document.getElementById('checkBinaryBtn').addEventListener('click', checkBinaryChallenge);
+  document.getElementById('newBinaryBtn').addEventListener('click', pickNewPattern);
+  pickNewPattern();
+
+  /* ---------------- RGB Mixer ---------------- */
+  var rSlider = document.getElementById('rSlider');
+  var gSlider = document.getElementById('gSlider');
+  var bSlider = document.getElementById('bSlider');
+  var rVal = document.getElementById('rVal');
+  var gVal = document.getElementById('gVal');
+  var bVal = document.getElementById('bVal');
+  var mixerSwatch = document.getElementById('mixerSwatch');
+  var mixerCode = document.getElementById('mixerCode');
+  var mixerHex = document.getElementById('mixerHex');
+  var guessSwatch = document.getElementById('guessSwatch');
+
+  function toHex(n){
+    var h = n.toString(16);
+    return h.length === 1 ? '0' + h : h;
+  }
+
+  function currentRGB(){
+    return {
+      r: parseInt(rSlider.value, 10),
+      g: parseInt(gSlider.value, 10),
+      b: parseInt(bSlider.value, 10)
+    };
+  }
+
+  function updateMixer(){
+    var col = currentRGB();
+    var css = 'rgb(' + col.r + ', ' + col.g + ', ' + col.b + ')';
+    rVal.textContent = String(col.r);
+    gVal.textContent = String(col.g);
+    bVal.textContent = String(col.b);
+    mixerSwatch.style.background = css;
+    guessSwatch.style.background = css;
+    mixerCode.textContent = css;
+    mixerHex.textContent = '#' + toHex(col.r) + toHex(col.g) + toHex(col.b);
+  }
+
+  [rSlider, gSlider, bSlider].forEach(function(slider){
+    slider.addEventListener('input', updateMixer);
+  });
+  updateMixer();
+
+  /* ---------------- Pixel art canvas ---------------- */
+  var PAINT_SIZE = 5;
+  var paintGrid = document.getElementById('paintGrid');
+  var paintCells = [];
+  for(var pr = 0; pr < PAINT_SIZE; pr++){
+    for(var pc = 0; pc < PAINT_SIZE; pc++){
+      var pcell = document.createElement('button');
+      pcell.type = 'button';
+      pcell.className = 'pcell';
+      pcell.setAttribute('aria-label', 'Canvas pixel row ' + (pr+1) + ', column ' + (pc+1) + ', unpainted');
+      (function(cellEl, row, col){
+        cellEl.addEventListener('click', function(){
+          var col2 = currentRGB();
+          var css = 'rgb(' + col2.r + ', ' + col2.g + ', ' + col2.b + ')';
+          cellEl.style.background = css;
+          cellEl.setAttribute('aria-label', 'Canvas pixel row ' + (row+1) + ', column ' + (col+1) + ', painted ' + css);
+        });
+      })(pcell, pr, pc);
+      paintGrid.appendChild(pcell);
+      paintCells.push(pcell);
+    }
+  }
+
+  document.getElementById('clearPaintBtn').addEventListener('click', function(){
+    paintCells.forEach(function(cell, i){
+      cell.style.background = '#1a2440';
+      var row = Math.floor(i / PAINT_SIZE) + 1;
+      var col = (i % PAINT_SIZE) + 1;
+      cell.setAttribute('aria-label', 'Canvas pixel row ' + row + ', column ' + col + ', unpainted');
+    });
+    announce('Canvas cleared.');
+  });
+
+  /* ---------------- Color match challenge ---------------- */
+  var targetSwatch = document.getElementById('targetSwatch');
+  var rgbFeedback = document.getElementById('rgbFeedback');
+  var targetColor = { r: 0, g: 0, b: 0 };
+
+  function newTargetColor(){
+    targetColor = {
+      r: Math.floor(Math.random() * 256),
+      g: Math.floor(Math.random() * 256),
+      b: Math.floor(Math.random() * 256)
+    };
+    targetSwatch.style.background = 'rgb(' + targetColor.r + ', ' + targetColor.g + ', ' + targetColor.b + ')';
+    rgbFeedback.textContent = '';
+    rgbFeedback.className = 'feedback';
+    announce('New target color loaded.');
+  }
+
+  function submitGuess(){
+    var guess = currentRGB();
+    var dist = Math.sqrt(
+      Math.pow(guess.r - targetColor.r, 2) +
+      Math.pow(guess.g - targetColor.g, 2) +
+      Math.pow(guess.b - targetColor.b, 2)
+    );
+    var maxDist = Math.sqrt(3 * Math.pow(255, 2));
+    var accuracy = Math.max(0, Math.round((1 - dist / maxDist) * 100));
+    var answerText = 'Target was rgb(' + targetColor.r + ', ' + targetColor.g + ', ' + targetColor.b + ').';
+
+    if(accuracy >= 95){
+      rgbFeedback.textContent = 'Excellent match! ' + accuracy + '% accurate. ' + answerText + ' +20 points';
+      rgbFeedback.className = 'feedback good';
+      addScore(20, true);
+    } else if(accuracy >= 80){
+      rgbFeedback.textContent = 'Nice mix! ' + accuracy + '% accurate. ' + answerText + ' +10 points';
+      rgbFeedback.className = 'feedback info';
+      addScore(10, false);
+    } else {
+      rgbFeedback.textContent = accuracy + '% accurate. ' + answerText + ' Try adjusting the sliders and try again.';
+      rgbFeedback.className = 'feedback bad';
+    }
+    announce(accuracy + ' percent accurate. ' + answerText);
+  }
+
+  document.getElementById('submitGuessBtn').addEventListener('click', submitGuess);
+  document.getElementById('newColorBtn').addEventListener('click', newTargetColor);
+  newTargetColor();
+
+})();
+</script>
+<script>
+(function(){
+  var lastH=0;
+  function sendHeight(){
+    try{
+      var d=document, b=d.body, e=d.documentElement;
+      var h=Math.max(
+        b?b.scrollHeight:0, b?b.offsetHeight:0,
+        e?e.scrollHeight:0, e?e.offsetHeight:0, e?e.clientHeight:0
+      );
+      if(h && Math.abs(h-lastH)>1){
+        lastH=h;
+        parent.postMessage({gcGameHeight:h}, '*');
+      }
+    }catch(err){}
+  }
+  window.addEventListener('load', sendHeight);
+  window.addEventListener('resize', sendHeight);
+  document.addEventListener('DOMContentLoaded', sendHeight);
+  if(window.ResizeObserver){
+    try{ new ResizeObserver(sendHeight).observe(document.documentElement); }catch(err){}
+  }
+  if(window.MutationObserver){
+    try{
+      new MutationObserver(sendHeight).observe(document.documentElement, {childList:true, subtree:true, attributes:true});
+    }catch(err){}
+  }
+  for(var i=1;i<=20;i++){ setTimeout(sendHeight, i*150); }
+  setInterval(sendHeight, 600);
+})();
+</script>
+
+</body>
+</html>

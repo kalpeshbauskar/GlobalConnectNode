@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Sorter Game: Level Up!</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap');
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Baloo 2', cursive;
+            background-color: #f0f8ff;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 10px;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        h1 {
+            color: #ff4757;
+            font-size: 2.2rem;
+            margin: 0 0 5px 0;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #57606f;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        /* Level Badge */
+        .level-badge {
+            background-color: #2ed573;
+            color: white;
+            padding: 5px 20px;
+            border-radius: 20px;
+            font-size: 1.3rem;
+            font-weight: 800;
+            box-shadow: 0 4px 0 #20bf6b;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            transition: all 0.3s;
+        }
+
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+            height: calc(100vh - 140px);
+            justify-content: space-between;
+        }
+
+        /* The Card in the Middle */
+        .card-container {
+            width: 100%;
+            height: 160px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .prompt-card {
+            background: white;
+            border: 4px solid #2ed573;
+            border-radius: 20px;
+            padding: 15px 25px;
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #2f3542;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            line-height: 1.3;
+        }
+
+        .prompt-card.shake {
+            animation: shake 0.4s;
+            border-color: #ff4757;
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+            100% { transform: translateX(0); }
+        }
+
+        /* The Two Choices */
+        .buttons-row {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .choice-btn {
+            flex: 1;
+            max-width: 320px;
+            padding: 15px 10px;
+            border: none;
+            border-radius: 20px;
+            font-family: 'Baloo 2', cursive;
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.2);
+            transition: all 0.1s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 1.1;
+        }
+
+        .choice-btn:active {
+            transform: translateY(8px);
+            box-shadow: none;
+        }
+
+        .btn-chat {
+            background-color: #1e90ff;
+            box-shadow: 0 8px 0 #0060cc;
+        }
+
+        .btn-game {
+            background-color: #ffa502;
+            box-shadow: 0 8px 0 #cc8400;
+        }
+
+        .btn-icon {
+            font-size: 2.2rem;
+            margin-bottom: 5px;
+        }
+
+        /* Feedback Message */
+        .feedback {
+            height: 50px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #ff4757;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 10px;
+        }
+
+        /* Progress */
+        .progress {
+            font-size: 1.1rem;
+            color: #747d8c;
+            font-weight: bold;
+        }
+
+        /* Win Screen */
+        .win-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 100;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .win-screen h2 {
+            font-size: 3rem;
+            color: #2ed573;
+            margin: 0 0 10px 0;
+        }
+
+        .win-screen p {
+            font-size: 1.5rem;
+            color: #2f3542;
+            max-width: 600px;
+        }
+
+        .restart-btn {
+            margin-top: 20px;
+            padding: 15px 40px;
+            background-color: #2ed573;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.5rem;
+            font-family: 'Baloo 2', cursive;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #20bf6b;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🤖 The Prompt Sorter 🤖</h1>
+    <div class="subtitle">Does this prompt give the AI a Job, an Idea, and Rules?</div>
+
+    <div class="level-badge" id="level-badge">LEVEL 1: BASIC 🟢</div>
+
+    <div class="game-area">
+        
+        <div class="progress" id="progress">Card 1 of 10</div>
+
+        <div class="card-container">
+            <div class="prompt-card" id="card">
+                "Loading prompt..."
+            </div>
+        </div>
+
+        <div class="feedback" id="feedback">
+            </div>
+
+        <div class="buttons-row">
+            <button class="choice-btn btn-chat" onclick="checkAnswer('normal')">
+                <span class="btn-icon">💬</span>
+                Normal Chat<br>
+                <span style="font-size: 0.9rem; font-weight: normal;">(Just chatting/asking)</span>
+            </button>
+
+            <button class="choice-btn btn-game" onclick="checkAnswer('game')">
+                <span class="btn-icon">🎮</span>
+                Game Maker!<br>
+                <span style="font-size: 0.9rem; font-weight: normal;">(Has a Job, Idea, & Rules)</span>
+            </button>
+        </div>
+
+    </div>
+
+    <div class="win-screen" id="win-screen">
+        <h2>PRO MASTER! 🏆</h2>
+        <p>You sorted all 10 cards perfectly!</p>
+        <p style="font-size: 1.2rem; color: #57606f;">You know exactly how to talk to a computer to build amazing things. You are ready to make your very own game!</p>
+        <button class="restart-btn" onclick="location.reload()">Play Again</button>
+    </div>
+
+    <script>
+        // Total 10 Prompts across 3 levels
+        const prompts = [
+            // LEVEL 1: BASIC (Super obvious)
+            {
+                text: '"What is 5 + 5?"',
+                type: 'normal',
+                whyWrong: "Oops! This is just a math question. It doesn't make a game!"
+            },
+            {
+                text: '"Act like a coder. Make a jumping game. Use block code."',
+                type: 'game',
+                whyWrong: "Oops! Look closely: It gave the AI a Job (coder) and Rules (use block code)!"
+            },
+            {
+                text: '"Tell me a funny joke about a dog."',
+                type: 'normal',
+                whyWrong: "Oops! Asking for a joke is just normal chatting."
+            },
+
+            // LEVEL 2: MEDIUM (A bit trickier)
+            {
+                text: '"Make a game."',
+                type: 'normal',
+                whyWrong: "Trick Question! This is too short. It has no Job, no Idea, and no Rules!"
+            },
+            {
+                text: '"You are an expert game maker. Build a maze game. Give me step-by-step instructions."',
+                type: 'game',
+                whyWrong: "Oops! It has a Job (expert), an Idea (maze), and Rules (step-by-step)!"
+            },
+            {
+                text: '"How do you play chess?"',
+                type: 'normal',
+                whyWrong: "Oops! Asking HOW to play a game is just a question, not building one!"
+            },
+            {
+                text: '"Act like a math teacher. Create a guessing game. Use easy numbers."',
+                type: 'game',
+                whyWrong: "Oops! Even though it's math, it has a Job, Idea, and Rules to build a game!"
+            },
+
+            // LEVEL 3: PRO MASTER (Needs careful reading)
+            {
+                text: '"Write a short story about a boy playing a video game."',
+                type: 'normal',
+                whyWrong: "Trick Question! It has the word 'game', but asking for a story is just a chat!"
+            },
+            {
+                text: '"I am bored. Let\'s play a game of tic-tac-toe together."',
+                type: 'normal',
+                whyWrong: "Oops! Playing a game WITH the AI is just normal chatting. You aren't building anything!"
+            },
+            {
+                text: '"Be a computer scientist. Create a snake game. Use simple code for kids."',
+                type: 'game',
+                whyWrong: "Oops! It gave a Job (scientist), Idea (snake game), and Rules (simple code)!"
+            }
+        ];
+
+        let currentIndex = 0;
+        const cardEl = document.getElementById('card');
+        const feedbackEl = document.getElementById('feedback');
+        const progressEl = document.getElementById('progress');
+        const badgeEl = document.getElementById('level-badge');
+
+        function loadCard() {
+            // Update Level Badge based on question number
+            if (currentIndex < 3) {
+                badgeEl.textContent = "LEVEL 1: BASIC 🟢";
+                badgeEl.style.backgroundColor = "#2ed573";
+                badgeEl.style.boxShadow = "0 4px 0 #20bf6b";
+            } else if (currentIndex < 7) {
+                badgeEl.textContent = "LEVEL 2: MEDIUM 🟡";
+                badgeEl.style.backgroundColor = "#ffa502";
+                badgeEl.style.boxShadow = "0 4px 0 #cc8400";
+            } else {
+                badgeEl.textContent = "LEVEL 3: PRO MASTER 🔴";
+                badgeEl.style.backgroundColor = "#ff4757";
+                badgeEl.style.boxShadow = "0 4px 0 #ff0000";
+            }
+
+            cardEl.textContent = prompts[currentIndex].text;
+            progressEl.textContent = `Card ${currentIndex + 1} of ${prompts.length}`;
+            feedbackEl.textContent = "";
+            cardEl.style.borderColor = "#2ed573";
+        }
+
+        function checkAnswer(chosenType) {
+            const currentPrompt = prompts[currentIndex];
+
+            if (chosenType === currentPrompt.type) {
+                // Correct!
+                feedbackEl.style.color = "#2ed573";
+                feedbackEl.textContent = "✅ Correct! Good job!";
+                cardEl.style.borderColor = "#2ed573";
+                
+                setTimeout(() => {
+                    currentIndex++;
+                    if (currentIndex < prompts.length) {
+                        loadCard();
+                    } else {
+                        document.getElementById('win-screen').style.display = 'flex';
+                    }
+                }, 1200); // Slight delay so they can read "Correct!"
+
+            } else {
+                // Wrong!
+                feedbackEl.style.color = "#ff4757";
+                feedbackEl.textContent = "❌ " + currentPrompt.whyWrong;
+                
+                // Shake the card
+                cardEl.classList.remove('shake');
+                void cardEl.offsetWidth; // trigger reflow
+                cardEl.classList.add('shake');
+            }
+        }
+
+        // Start game
+        loadCard();
+    </script>
+    <script>
+    (function(){
+      var lastH=0;
+      function sendHeight(){
+        try{
+          var d=document, b=d.body, e=d.documentElement;
+          var h=Math.max(
+            b?b.scrollHeight:0, b?b.offsetHeight:0,
+            e?e.scrollHeight:0, e?e.offsetHeight:0, e?e.clientHeight:0
+          );
+          if(h && Math.abs(h-lastH)>1){
+            lastH=h;
+            parent.postMessage({gcGameHeight:h}, '*');
+          }
+        }catch(err){}
+      }
+      window.addEventListener('load', sendHeight);
+      window.addEventListener('resize', sendHeight);
+      document.addEventListener('DOMContentLoaded', sendHeight);
+      if(window.ResizeObserver){
+        try{ new ResizeObserver(sendHeight).observe(document.documentElement); }catch(err){}
+      }
+      if(window.MutationObserver){
+        try{
+          new MutationObserver(sendHeight).observe(document.documentElement, {childList:true, subtree:true, attributes:true});
+        }catch(err){}
+      }
+      for(var i=1;i<=20;i++){ setTimeout(sendHeight, i*150); }
+      setInterval(sendHeight, 600);
+    })();
+    </script>
+</body>
+</html>

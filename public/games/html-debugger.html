@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Debugger Pro</title>
+    <style>
+        /* CSS: Developer / Hacker Theme */
+        :root {
+            --bg-color: #0d1117;
+            --container-bg: #161b22;
+            --text-color: #c9d1d9;
+            --accent-green: #2ea043;
+            --accent-red: #f85149;
+            --accent-blue: #58a6ff;
+            --border-color: #30363d;
+            --code-bg: #010409;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            
+            margin: 0;
+        }
+
+        #game-container {
+            background-color: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 750px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        h1, h2, h3 {
+            color: var(--accent-blue);
+            text-align: center;
+            margin-top: 0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Start & End Screens */
+        #start-screen, #end-screen {
+            text-align: center;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-green);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+            margin-top: 20px;
+        }
+
+        .btn-primary:hover {
+            background-color: #3fb950;
+        }
+
+        /* Game Screen */
+        #status-bar {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+
+        #code-display {
+            background-color: var(--code-bg);
+            color: #ff7b72;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.8rem;
+            padding: 20px;
+            border-radius: 5px;
+            border: 1px dashed var(--accent-red);
+            text-align: center;
+            margin-bottom: 25px;
+            overflow-x: auto;
+            letter-spacing: 2px;
+        }
+
+        .option-btn {
+            display: block;
+            width: 100%;
+            background-color: #21262d;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: left;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background-color: #30363d;
+            border-color: #8b949e;
+        }
+
+        /* POPUP MODAL STYLES */
+        #popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        #popup-box {
+            background-color: var(--container-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            padding: 30px;
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+            animation: popIn 0.3s ease-out;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        #popup-title {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .popup-correct { color: #7ee787; }
+        .popup-wrong { color: #ff7b72; }
+
+        #popup-explanation {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: #c9d1d9;
+        }
+
+        .code-compare {
+            background-color: var(--code-bg);
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .buggy-text { color: #ff7b72; text-decoration: line-through; }
+        .fixed-text { color: #7ee787; font-weight: bold; }
+        .arrow-down { color: var(--accent-blue); font-size: 1.5rem; }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        
+        <div id="start-screen">
+            <h1>&lt;HTML Debugger Pro&gt;</h1>
+            <p>Your mission: Find the syntax bugs in the HTML code.</p>
+            <p>Topics: Headings (h1-h6), Paragraphs (p), Body, Images (img), and bgcolors!</p>
+            <button class="btn-primary" onclick="startGame()">Start Server >_</button>
+        </div>
+
+        <div id="game-screen" class="hidden">
+            <div id="status-bar">
+                <span id="level-text">Level: 1 / 15</span>
+                <span id="score-text">Score: 0</span>
+            </div>
+
+            <div id="code-display"></div>
+
+            <div id="options-container">
+                </div>
+        </div>
+
+        <div id="end-screen" class="hidden">
+            <h1>System Diagnostic Complete</h1>
+            <h2>Final Score: <span id="final-score">0</span> / 15</h2>
+            <h3 id="rank-text"></h3>
+            <button class="btn-primary" onclick="restartGame()">Reboot System</button>
+        </div>
+
+    </div>
+
+    <div id="popup-overlay" class="hidden">
+        <div id="popup-box">
+            <h1 id="popup-title"></h1>
+            <div id="popup-explanation"></div>
+            
+            <div class="code-compare">
+                <div class="buggy-text" id="popup-buggy-code"></div>
+                <div class="arrow-down">⬇️ Fixed ⬇️</div>
+                <div class="fixed-text" id="popup-fixed-code"></div>
+            </div>
+
+            <button class="btn-primary" onclick="closePopupAndNext()">Next Bug >></button>
+        </div>
+    </div>
+
+    <script>
+        // STRICT CURRICULUM QUESTIONS (h1-h6, body, bgcolor, p, img, src, pair/single tags)
+        const questions = [
+            { code: "<h1>Welcome", options: ["Missing </h1> at the end", "Missing quotes", "h1 needs a bgcolor"], correct: 0, fixedCode: "<h1>Welcome</h1>" },
+            { code: "<p>Hello World<p>", options: ["Change <p> to <paragraph>", "Missing the / in the closing tag </p>", "Missing quotes"], correct: 1, fixedCode: "<p>Hello World</p>" },
+            { code: "<bdy>Content</body>", options: ["Missing <head>", "Change </body> to </bdy>", "bdy is spelled wrong, it should be body"], correct: 2, fixedCode: "<body>Content</body>" },
+            { code: "<body bg=\"blue\">", options: ["bg should be bgcolor", "blue should be green", "Missing a closing </body> here"], correct: 0, fixedCode: "<body bgcolor=\"blue\">" },
+            { code: "<img scr=\"cat.png\">", options: ["Missing </img>", "scr is spelled wrong, it should be src", "Tags must be uppercase"], correct: 1, fixedCode: "<img src=\"cat.png\">" },
+            { code: "<img src=\"dog.jpg\"></img>", options: ["<img> is a single tag, it does not need </img>", "Missing an opening <img>", "dog.jpg is spelled wrong"], correct: 0, fixedCode: "<img src=\"dog.jpg\">" },
+            { code: "<h2>Title</h3>", options: ["Both tags should be h1", "Missing quotes", "Opening (h2) and closing (h3) tags must match"], correct: 2, fixedCode: "<h2>Title</h2>" },
+            { code: "<img src=bird.jpg>", options: ["Missing quotes around bird.jpg", "Use source instead of src", "Missing </img>"], correct: 0, fixedCode: "<img src=\"bird.jpg\">" },
+            { code: "<p>Welcome<\\p>", options: ["Missing a background color", "Use a forward slash (/) instead of a backslash (\\)", "Missing quotes"], correct: 1, fixedCode: "<p>Welcome</p>" },
+            { code: "<h1 Title </h1>", options: ["Title should be lowercase", "Missing the closing > bracket in the first tag", "h1 is not a real tag"], correct: 1, fixedCode: "<h1> Title </h1>" },
+            { code: "<body><p>Text</body></p>", options: ["Missing bgcolor", "Tags must be closed in reverse order (</p> then </body>)", "Text needs quotes"], correct: 1, fixedCode: "<body><p>Text</p></body>" },
+            { code: "<img source=\"pic.png\">", options: ["source should just be src", "Missing </img>", "pic.png needs a capital P"], correct: 0, fixedCode: "<img src=\"pic.png\">" },
+            { code: "<h1>Heading 1</h2>", options: ["Heading 1 needs quotes", "Opening (h1) and closing (h2) tags must match", "Missing the body tag"], correct: 1, fixedCode: "<h1>Heading 1</h1>" },
+            { code: "<p>My Paragraph", options: ["Missing the opening <p> tag", "Paragraphs need a bgcolor", "Missing the closing </p> tag"], correct: 2, fixedCode: "<p>My Paragraph</p>" },
+            { code: "<img src=\"logo.png\"", options: ["Missing the closing > bracket at the end", "Missing </img>", "src is spelled wrong"], correct: 0, fixedCode: "<img src=\"logo.png\">" }
+        ];
+
+        // State Variables
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        // DOM Elements
+        const startScreen = document.getElementById("start-screen");
+        const gameScreen = document.getElementById("game-screen");
+        const endScreen = document.getElementById("end-screen");
+        const popupOverlay = document.getElementById("popup-overlay");
+        
+        const levelText = document.getElementById("level-text");
+        const scoreText = document.getElementById("score-text");
+        const codeDisplay = document.getElementById("code-display");
+        const optionsContainer = document.getElementById("options-container");
+
+        function escapeHTML(str) {
+            return str.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        function startGame() {
+            startScreen.classList.add("hidden");
+            endScreen.classList.add("hidden");
+            gameScreen.classList.remove("hidden");
+            currentQuestionIndex = 0;
+            score = 0;
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            optionsContainer.innerHTML = "";
+            const currentQ = questions[currentQuestionIndex];
+            
+            levelText.innerText = `Level: ${currentQuestionIndex + 1} / ${questions.length}`;
+            scoreText.innerText = `Score: ${score}`;
+            
+            // Display buggy code
+            codeDisplay.innerHTML = escapeHTML(currentQ.code);
+
+            // Generate options
+            currentQ.options.forEach((opt, index) => {
+                const btn = document.createElement("button");
+                btn.classList.add("option-btn");
+                btn.innerText = opt;
+                btn.onclick = () => showPopup(index);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function showPopup(selectedIndex) {
+            const currentQ = questions[currentQuestionIndex];
+            
+            const titleEl = document.getElementById("popup-title");
+            const explanationEl = document.getElementById("popup-explanation");
+            const buggyEl = document.getElementById("popup-buggy-code");
+            const fixedEl = document.getElementById("popup-fixed-code");
+
+            // Fill code comparison safely
+            buggyEl.innerHTML = escapeHTML(currentQ.code);
+            fixedEl.innerHTML = escapeHTML(currentQ.fixedCode);
+
+            if (selectedIndex === currentQ.correct) {
+                // Correct Answer
+                score++;
+                scoreText.innerText = `Score: ${score}`;
+                titleEl.innerText = "✅ Bug Squashed!";
+                titleEl.className = "popup-correct";
+                explanationEl.innerText = `Great job! You found the fix: "${currentQ.options[currentQ.correct]}"`;
+            } else {
+                // Wrong Answer
+                titleEl.innerText = "❌ Compilation Error!";
+                titleEl.className = "popup-wrong";
+                explanationEl.innerHTML = `Oops! The correct fix was: <br><strong>"${currentQ.options[currentQ.correct]}"</strong>`;
+            }
+
+            // Show Popup
+            popupOverlay.classList.remove("hidden");
+        }
+
+        function closePopupAndNext() {
+            popupOverlay.classList.add("hidden"); // Hide popup
+            
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                loadQuestion();
+            } else {
+                showEndScreen();
+            }
+        }
+
+        function showEndScreen() {
+            gameScreen.classList.add("hidden");
+            endScreen.classList.remove("hidden");
+            
+            document.getElementById("final-score").innerText = score;
+            
+            const rankText = document.getElementById("rank-text");
+            if (score <= 5) {
+                rankText.innerText = "Rank: HTML Beginner 👶\nKeep practicing your tags!";
+                rankText.style.color = "#ff7b72";
+            } else if (score <= 11) {
+                rankText.innerText = "Rank: HTML Coder 💻\nGood job spotting those syntax errors!";
+                rankText.style.color = "#58a6ff";
+            } else {
+                rankText.innerText = "Rank: HTML Master 🚀\nYou are ready to build real websites!";
+                rankText.style.color = "#7ee787";
+            }
+        }
+
+        function restartGame() {
+            startGame();
+        }
+    </script>
+<script>
+(function(){
+  var lastH=0;
+  function sendHeight(){
+    try{
+      var d=document, b=d.body, e=d.documentElement;
+      var h=Math.max(
+        b?b.scrollHeight:0, b?b.offsetHeight:0,
+        e?e.scrollHeight:0, e?e.offsetHeight:0, e?e.clientHeight:0
+      );
+      if(h && Math.abs(h-lastH)>1){
+        lastH=h;
+        parent.postMessage({gcGameHeight:h}, '*');
+      }
+    }catch(err){}
+  }
+  window.addEventListener('load', sendHeight);
+  window.addEventListener('resize', sendHeight);
+  document.addEventListener('DOMContentLoaded', sendHeight);
+  if(window.ResizeObserver){
+    try{ new ResizeObserver(sendHeight).observe(document.documentElement); }catch(err){}
+  }
+  if(window.MutationObserver){
+    try{
+      new MutationObserver(sendHeight).observe(document.documentElement, {childList:true, subtree:true, attributes:true});
+    }catch(err){}
+  }
+  for(var i=1;i<=20;i++){ setTimeout(sendHeight, i*150); }
+  setInterval(sendHeight, 600);
+})();
+</script>
+
+</body>
+</html>

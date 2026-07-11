@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Detective: Spot the Hallucination</title>
+    <style>
+        :root {
+            --bg-color: #f4f4f9;
+            --container-bg: #ffffff;
+            --text-color: #333333;
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #2ecc71;
+            --danger-color: #e74c3c;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            background-color: var(--container-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            max-width: 550px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        .score-board {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            color: var(--accent-color);
+        }
+
+        .qa-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid var(--accent-color);
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: left;
+            border-radius: 4px;
+        }
+
+        .label {
+            font-size: 0.85em;
+            text-transform: uppercase;
+            font-weight: bold;
+            color: #95a5a6;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .text-content {
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        .ai-response {
+            font-style: italic;
+            color: #2c3e50;
+            margin-bottom: 0;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+            flex: 1;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-fact {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-hallucination {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .btn-next {
+            background-color: var(--primary-color);
+            color: white;
+            display: none;
+            width: 100%;
+        }
+
+        .feedback {
+            font-size: 1.2em;
+            font-weight: bold;
+            min-height: 30px;
+            margin-bottom: 15px;
+        }
+
+        .explanation {
+            font-size: 0.95em;
+            color: #444;
+            display: none;
+            margin-bottom: 20px;
+            text-align: left;
+            background: #eef2f5;
+            padding: 12px;
+            border-radius: 6px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <h1>AI Detective</h1>
+    <p class="subtitle">Can you spot the AI Hallucinations in your syllabus?</p>
+    
+    <div class="score-board">Score: <span id="score">0</span> / <span id="total">0</span></div>
+
+    <div class="qa-box">
+        <span class="label">User Prompt:</span>
+        <div class="text-content" id="prompt-text">Loading...</div>
+        
+        <span class="label">AI Response:</span>
+        <div class="text-content ai-response" id="response-text">Loading...</div>
+    </div>
+
+    <div class="feedback" id="feedback-message"></div>
+    <div class="explanation" id="explanation-text"></div>
+
+    <div class="btn-group" id="action-buttons">
+        <button class="btn-fact" onclick="checkAnswer(true)">Real Fact</button>
+        <button class="btn-hallucination" onclick="checkAnswer(false)">AI Hallucination</button>
+    </div>
+
+    <button class="btn-next" id="next-button" onclick="loadNextQuestion()">Next Case ➔</button>
+</div>
+
+<script>
+    // Game Data: Indian curriculum for 5th to 10th grade
+    const database = [
+        {
+            prompt: "What is the capital city of India?",
+            response: "The capital of India is Mumbai, which is also the financial and entertainment hub of the country.",
+            isFact: false,
+            explanation: "Hallucination! The capital of India is New Delhi. While Mumbai is the financial capital, New Delhi is the political capital."
+        },
+        {
+            prompt: "Who founded the Maratha Empire?",
+            response: "Chhatrapati Shivaji Maharaj founded the Maratha Empire in the 17th century.",
+            isFact: true,
+            explanation: "Fact! Chhatrapati Shivaji Maharaj established a progressive civil rule and built a powerful empire starting in Maharashtra."
+        },
+        {
+            prompt: "Which gas do plants absorb during photosynthesis?",
+            response: "During photosynthesis, plants absorb oxygen from the air and release carbon dioxide to make their food.",
+            isFact: false,
+            explanation: "Hallucination! The AI got it backward. Plants absorb Carbon Dioxide (CO2) and release Oxygen (O2) during photosynthesis."
+        },
+        {
+            prompt: "How many states and Union Territories are there in India?",
+            response: "India currently has 28 states and 8 Union Territories.",
+            isFact: true,
+            explanation: "Fact! Following the reorganization of Jammu & Kashmir and the merging of Dadra & Nagar Haveli with Daman & Diu, this is the correct political map."
+        },
+        {
+            prompt: "Which is the largest desert in India?",
+            response: "The Sahara Desert, located mostly in Rajasthan, is the largest desert in India.",
+            isFact: false,
+            explanation: "Hallucination! The Sahara Desert is in Africa. The largest desert in India is the Thar Desert (Great Indian Desert) located in Rajasthan."
+        },
+        {
+            prompt: "What is the boiling point of water?",
+            response: "Water boils at exactly 100 degrees Celsius (or 212 degrees Fahrenheit) at standard sea-level pressure.",
+            isFact: true,
+            explanation: "Fact! This is a fundamental concept in science. The boiling point changes if you go up a mountain, but at sea level, it is 100°C."
+        },
+        {
+            prompt: "Who was the first Prime Minister of independent India?",
+            response: "Mahatma Gandhi served as the first Prime Minister of India after the country gained independence in 1947.",
+            isFact: false,
+            explanation: "Hallucination! Jawaharlal Nehru was the first Prime Minister of India. Mahatma Gandhi never held a political office in the independent Indian government."
+        },
+        {
+            prompt: "What is the National Anthem of India?",
+            response: "The National Anthem of India is 'Jana Gana Mana', originally composed by Rabindranath Tagore.",
+            isFact: true,
+            explanation: "Fact! Rabindranath Tagore composed it in Bengali, and its Hindi version was adopted by the Constituent Assembly on January 24, 1950."
+        },
+        {
+            prompt: "Which part of the cell is known as the powerhouse?",
+            response: "The nucleus is known as the powerhouse of the cell because it generates most of the energy needed for cellular functions.",
+            isFact: false,
+            explanation: "Hallucination! The Mitochondria is the powerhouse of the cell. The nucleus acts more like the brain or control center."
+        },
+        {
+            prompt: "What is the national animal of India?",
+            response: "The magnificent Royal Bengal Tiger is the national animal of India.",
+            isFact: true,
+            explanation: "Fact! The Bengal Tiger was chosen as the national animal due to its grace, strength, and agility. Project Tiger was launched in 1973 to protect them."
+        }
+    ];
+
+    let currentIndex = 0;
+    let score = 0;
+
+    // DOM Elements
+    const promptEl = document.getElementById('prompt-text');
+    const responseEl = document.getElementById('response-text');
+    const feedbackEl = document.getElementById('feedback-message');
+    const explanationEl = document.getElementById('explanation-text');
+    const scoreEl = document.getElementById('score');
+    const totalEl = document.getElementById('total');
+    const actionButtons = document.getElementById('action-buttons');
+    const nextButton = document.getElementById('next-button');
+
+    // Initialize Game
+    function initGame() {
+        totalEl.innerText = database.length;
+        loadNextQuestion();
+    }
+
+    // Load Question
+    function loadNextQuestion() {
+        if (currentIndex >= database.length) {
+            endGame();
+            return;
+        }
+
+        const currentData = database[currentIndex];
+        promptEl.innerText = `"${currentData.prompt}"`;
+        responseEl.innerText = `"${currentData.response}"`;
+        
+        // Reset UI
+        feedbackEl.innerText = "";
+        explanationEl.style.display = "none";
+        actionButtons.style.display = "flex";
+        nextButton.style.display = "none";
+    }
+
+    // Check Answer
+    function checkAnswer(userGuessedFact) {
+        const currentData = database[currentIndex];
+        const isCorrect = (userGuessedFact === currentData.isFact);
+
+        if (isCorrect) {
+            score++;
+            scoreEl.innerText = score;
+            feedbackEl.innerText = "✅ Great catch, Detective!";
+            feedbackEl.style.color = "var(--success-color)";
+        } else {
+            feedbackEl.innerText = "❌ Oops! The AI tricked you.";
+            feedbackEl.style.color = "var(--danger-color)";
+        }
+
+        explanationEl.innerText = currentData.explanation;
+        explanationEl.style.display = "block";
+        
+        actionButtons.style.display = "none";
+        nextButton.style.display = "block";
+        
+        currentIndex++;
+    }
+
+    // End Game
+    function endGame() {
+        promptEl.innerText = "Case Closed!";
+        responseEl.innerText = `Investigation complete. You scored ${score} out of ${database.length}.`;
+        feedbackEl.innerText = "";
+        explanationEl.style.display = "none";
+        actionButtons.style.display = "none";
+        nextButton.innerText = "Play Again";
+        nextButton.style.display = "block";
+        nextButton.onclick = () => {
+            currentIndex = 0;
+            score = 0;
+            scoreEl.innerText = score;
+            nextButton.onclick = loadNextQuestion;
+            initGame();
+        };
+    }
+
+    // Start
+    window.onload = initGame;
+</script>
+
+<script>
+(function(){
+  var lastH=0;
+  function sendHeight(){
+    try{
+      var d=document, b=d.body, e=d.documentElement;
+      var h=Math.max(
+        b?b.scrollHeight:0, b?b.offsetHeight:0,
+        e?e.scrollHeight:0, e?e.offsetHeight:0, e?e.clientHeight:0
+      );
+      if(h && Math.abs(h-lastH)>1){
+        lastH=h;
+        parent.postMessage({gcGameHeight:h}, '*');
+      }
+    }catch(err){}
+  }
+  window.addEventListener('load', sendHeight);
+  window.addEventListener('resize', sendHeight);
+  document.addEventListener('DOMContentLoaded', sendHeight);
+  if(window.ResizeObserver){
+    try{ new ResizeObserver(sendHeight).observe(document.documentElement); }catch(err){}
+  }
+  if(window.MutationObserver){
+    try{
+      new MutationObserver(sendHeight).observe(document.documentElement, {childList:true, subtree:true, attributes:true});
+    }catch(err){}
+  }
+  for(var i=1;i<=20;i++){ setTimeout(sendHeight, i*150); }
+  setInterval(sendHeight, 600);
+})();
+</script>
+
+</body>
+</html>
